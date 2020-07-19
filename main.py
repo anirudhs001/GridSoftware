@@ -7,7 +7,6 @@ import os
 import glob
 import sounddevice
 import time
-import requests
 
 import Consts
 import models
@@ -31,20 +30,24 @@ class customDataset(Dataset):
         return len(self.Targets)
 
     def __getitem__(self, idx):
-        target = torch.load(self.Targets[idx]) 
-        dvec = torch.load(self.Dvecs[idx])
-        mixed = torch.load(self.Mixed[idx])
-        return mixed, target, dvec
+        # target = torch.load(self.Targets[idx]) 
+        # dvec_mel = torch.load(self.Dvecs[idx])
+        # mixed = torch.load(self.Mixed[idx])
+        target = torch.from_file(self.Targets[idx])
+        dvec_mel = torch.from_file(self.Dvecs[idx])
+        mixed = torch.from_file(self.Mixed[idx])
+        return mixed, target, dvec_mel
 
 def collate_fn(batch):
     targets_list = list()
     mixed_list = list()
     dvec_list = list() # unequally length, can't stack
 
-    for inp, targ, dvec in batch:
+    for inp, targ, dvec_mel in batch:
+        #add spectrograms to list
         mixed_list.append(inp)
         targets_list.append(targ)
-        dvec_list.append(dvec)
+        dvec_list.append(dvec_mel)
     
     #stack
     mixed_list = torch.stack(mixed_list, dim=0)
@@ -65,8 +68,11 @@ if __name__ == "__main__":
         shuffle=True
     )
 
-    #testing: WORKS!
-    # inp, targ, dvec = data_loader.dataset.__getitem__(4)
+    # testing: WORKS!
+    inp, targ, dvec = data_loader.dataset.__getitem__(4)
+    print(f"inp size{inp.size()}")
+    print(f"targ size{targ.size()}")
+    print("dvec size",dvec)
     # targ_wav = librosa.core.istft(targ)
     # sounddevice.play(targ_wav, samplerate=10000)
     # time.sleep(3)
@@ -76,18 +82,9 @@ if __name__ == "__main__":
     embedder = models.Embedder()
     extractor = models.Extractor()
 
-    #load pretrained embedder
-    embedder_pth = os.path.join(Consts.MODELS_DIR, "embedder.pt")
-    if not os.path.exists(embedder_pth):
-        print("downloading pretrained embedder...")
-        #save it:
-        request = requests.get(Consts.url_embedder, allow_redirects=True)
-        with open(embedder_pth, 'wb') as f:
-            f.write(request.content)
-    embedder.load_state_dict(torch.load(embedder_pth, map_location=device))
-    #embedder in eval mode
-    embedder.eval()
-    print("embedder loaded!")
 
     #Train!
-     
+    print("beginning training:")
+    trainer.train(data_loader, device=device, lr=1e-3, num_epochs=1 )
+      
+    print("training done!")
