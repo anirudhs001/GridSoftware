@@ -7,6 +7,15 @@ import Consts
 ############
 #Embedder
 ############
+#MODELS adopted from github
+class LinearNorm(nn.Module):
+    def __init__(self):
+        super(LinearNorm, self).__init__()
+        self.linear_layer = nn.Linear(768, 256)
+
+    def forward(self, x):
+        return self.linear_layer(x)
+
 class Embedder(nn.Module):
     def __init__(self):
         super().__init__()
@@ -17,10 +26,7 @@ class Embedder(nn.Module):
             batch_first=True
         )
         
-        self.linear = nn.Linear(
-            in_features=768, 
-            out_features=256
-        )
+        self.proj = LinearNorm()
 
     def forward(self, mel): # mel is the mel-filterbank energy
         #input is (num_mels x Time=T) (num_mels = 40)
@@ -31,7 +37,7 @@ class Embedder(nn.Module):
         x = self.lstm(mels)[0] #(T' x 80 x lstm_hidden)
         #get last window from x
         x = x[:, -1, :] #(T' x 1 x lstm_hidden)
-        x = self.linear(x) #(T' x emb_dim=256)
+        x = self.proj(x) #(T' x emb_dim=256)
         #L2 norm all vectors
         x = x / torch.norm(x, p=2, dim=1, keepdim=True) #(T' x emb_dim)
         #average pooling
