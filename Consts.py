@@ -8,3 +8,6 @@ DATA_DIR = os.path.join("./datasets/processed", "size=10000")
 MODELS_DIR = "./models/"
 
 SAMPLING_RATE = 10000
+dvec_nfft = 512
+dvec_hoplength = 160
+dvec_winlength= 400
