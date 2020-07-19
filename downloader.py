@@ -13,13 +13,14 @@ import os
 import glob
 from multiprocessing import Pool, cpu_count
 
+import Consts
 # Constants
 DATA_DIR_RAW = "./datasets/raw/"
 DATA_DIR_PROCESSED = "./datasets/processed"
 SAMPLING_RATE = 10000 
 DATASET_SIZE = 10000 #TODO: change this
 NUM_SPEAKERS = 2
-BATCH_SIZE = cpu_count() * 125 #TODO:change this if DATASET_SIZE changed
+BATCH_SIZE = min(cpu_count() * 125, DATASET_SIZE) #TODO:change this if DATASET_SIZE changed
 
 ####################
 #   PREPARE DATA
@@ -64,7 +65,7 @@ def mix(speakers_list, noise_smpl, sample_num, outDir, save_wav=False):
     
     outpath = os.path.join(outDir, "sample-"+str(sample_num))
     if os.path.exists(outpath): #file already exists, exit
-        return False
+        return 
 
     target = speakers_list[0]
     s_rest = speakers_list[1:]
@@ -85,7 +86,7 @@ def mix(speakers_list, noise_smpl, sample_num, outDir, save_wav=False):
 
     #trim leading and trailing silence
     target_audio, _ = librosa.effects.trim(target_audio, top_db=20)
-    target_dvec, _ = librosa.effects.trim(target_dvec, top_db=20)
+    # target_dvec, _ = librosa.effects.trim(target_dvec, top_db=20)
     s_rest_audio = [librosa.effects.trim(spkr_audio, top_db=20)[0] for spkr_audio in s_rest_audio]
     # noise_audio = librosa.effects.trim(noise_audio, top_db=20)
 
@@ -94,11 +95,11 @@ def mix(speakers_list, noise_smpl, sample_num, outDir, save_wav=False):
     L = SAMPLING_RATE * 3
     if len(target_dvec) < L or len(target_audio) < L:
         # print("file too short")
-        return False
+        return 
     for sample in s_rest_audio:
         if len(sample) < L:
             # print("file too short")
-            return False
+            return 
     target_audio = target_audio[:L]
         #don't shorten dvec
     s_rest_audio = [spkr_audio[:L] for spkr_audio in s_rest_audio]
@@ -117,7 +118,7 @@ def mix(speakers_list, noise_smpl, sample_num, outDir, save_wav=False):
 
     #norm
     norm = np.max(np.abs(mixed))
-    target_audio, target_dvec, mixed = target_audio/norm, target_dvec/norm, mixed/norm
+    target_audio, mixed = target_audio/norm, mixed/norm
     
     os.mkdir(outpath)
     if save_wav:
@@ -126,20 +127,28 @@ def mix(speakers_list, noise_smpl, sample_num, outDir, save_wav=False):
 
     #convert to spectograms
     target_audio = librosa.stft(target_audio)
-    target_dvec = librosa.stft(target_dvec)
+    target_dvec = librosa.stft(
+        target_dvec, 
+        n_fft=Consts.dvec_nfft,
+        hop_length=Consts.dvec_hoplength,
+        win_length=Consts.dvec_winlength
+    )
     mixed = librosa.stft(mixed)
 
+    #convert dvec spectrogram to melspectrogram
+    mag = np.abs(target_dvec) ** 2
+    fltr = librosa.filters.mel(sr=SAMPLING_RATE, n_fft=Consts.dvec_nfft, n_mels=40)
+    target_dvec = np.log10(np.dot(fltr, mag) + 1e-6)
     #save to files
     target_path = os.path.join(outpath, "target.pt")
     mixed_path = os.path.join(outpath, "mixed.pt")
     dvec_path = os.path.join(outpath, "dvec.pt")
     
+
     torch.save(target_audio, target_path)
     torch.save(target_dvec, dvec_path)
     torch.save(mixed, mixed_path)
     
-    return True
-
 
 
 if __name__ == "__main__":
