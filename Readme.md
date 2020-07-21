@@ -35,22 +35,23 @@ Add music too and change number of speakers to 2
 - mask short segments at a time 
 
 ## Steps to Run:
-1) run downloader.py  
-`python3 downloader.py`
-It does the following:
-1)Download the LIBRISPEECH Dataset(dev-clean folder only)
-2)create the mixed audio file by mixing noise and other speakers.
+1) run downloader.py   
+`python3 downloader.py`  
+It does the following:  
+1)Download the LIBRISPEECH Dataset(dev-clean folder only)  
+2)create the mixed audio file by mixing noise and other speakers.  
 3)stft all files(audio sample for dvec, target audio and mixed audio).
 These are stored in folder "size=N" in "./datasets/preprocessed/" where N is the number of training samples in that folder.
 These are stft'ed and stored as pytorch tensors before train-time to reduce training time.
 downloader.py uses all available cpu-cores on the current machine to speed up this task.
 
-2) run main.py
-`python3 main.py`
-It starts the training loop.
-Model is Checkpointed at regular intervals and stored in "./models/extractor/extractor_epoch-e_batch-b.pt", where e is the epoch number and b is the batch_id at checkpoint.
-3) run test.py
-`python3 test.py`
+2) run main.py  
+`python3 main.py`  
+It starts the training loop.  
+Model is Checkpointed at regular intervals and stored in "./models/extractor/extractor_epoch-e_batch-b.pt", where e is the epoch number and b is the batch_id at checkpoint.  
+
+3) run test.py  
+`python3 test.py`  
 Test the model!
 
 ## References:
