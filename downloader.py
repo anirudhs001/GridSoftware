@@ -17,7 +17,7 @@ import Consts
 # Constants
 DATA_DIR_RAW = "./datasets/raw/"
 DATA_DIR_PROCESSED = "./datasets/processed"
-SAMPLING_RATE = 10000 
+SAMPLING_RATE = Consts.SAMPLING_RATE 
 DATASET_SIZE = 10 #TODO: change this
 NUM_SPEAKERS = 2
 BATCH_SIZE = min(cpu_count() * 125, DATASET_SIZE) #TODO:change this if DATASET_SIZE changed
@@ -43,11 +43,11 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=False):
     noises = glob.glob(os.path.join(DATA_DIR_RAW, "Noisy/*/*.wav"), recursive=True)
     i = 0
     while(i < n):
-        #randomly select some speakers num_cpu times
+        #randomly select some speakers batch_size times
         s_slct = [random.sample(all_speakers, NUM_SPEAKERS - 1) for x in range(BATCH_SIZE)]
         noise_smpl = [random.choice(noises) for _ in range(BATCH_SIZE)]  
-        #run on all available cpus
 
+        #run on all available cpus
         with Pool(cpu_count()) as p:
             p.starmap(mix, [(s_slct[j], noise_smpl[j], i + j, outDir, save_wav) for j in range(BATCH_SIZE)]) 
         i = i + BATCH_SIZE 
@@ -86,7 +86,7 @@ def mix(speakers_list, noise_smpl, sample_num, outDir, save_wav=False):
 
     #trim leading and trailing silence
     target_audio, _ = librosa.effects.trim(target_audio, top_db=20)
-    # target_dvec, _ = librosa.effects.trim(target_dvec, top_db=20)
+    target_dvec, _ = librosa.effects.trim(target_dvec, top_db=20)
     s_rest_audio = [librosa.effects.trim(spkr_audio, top_db=20)[0] for spkr_audio in s_rest_audio]
     # noise_audio = librosa.effects.trim(noise_audio, top_db=20)
 
@@ -112,7 +112,7 @@ def mix(speakers_list, noise_smpl, sample_num, outDir, save_wav=False):
         noise_audio = noise_audio[:L]
 
     #mix files
-    mixed = target_audio
+    mixed = np.copy(target_audio)
     for s_audio in s_rest_audio: mixed += s_audio
     mixed += noise_audio 
 
@@ -173,5 +173,5 @@ if __name__ == "__main__":
         os.mkdir(DATA_DIR_PROCESSED)
     print("preparing data...")
     print(f"Available number of cpu cores:{cpu_count()}")
-    prep_data(n=DATASET_SIZE, num_spkrs=2, save_wav=False)
+    prep_data(n=DATASET_SIZE, num_spkrs=2, save_wav=True)
     print("datset preparation done!")
