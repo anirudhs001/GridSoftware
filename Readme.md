@@ -9,21 +9,21 @@ this repo contains material related to making a speaker extraction model
 ## Steps:
 ### 1)Gather data
 Use Librispeech dataset for speech
-- TODO(level 1): [x] find small music and noise datasets:DONE
-- TODO(level 1): [ ] Integrate the files shared by flipkart with existing dataset.
-- TODO(level 3): [ ] find categorized audio dataset with samples of people in different ages, genders etc.
+- [x] TODO(level 1): find small music and noise datasets:DONE
+- [ ] TODO(level 1): Integrate the files shared by flipkart with existing dataset.
+- [ ] TODO(level 3): find categorized audio dataset with samples of people in different ages, genders etc.
 ### 2)Segragate, label, and prepare data
 Add music too and change number of speakers to 2
 - make dataset and dataloaders
-- TODO(level 1): [x] use harder examples with more than 2 speakers
-- TODO(level 1): [ ] use files given by flipkart.
-- TODO(level 2): [ ] change audio segments length.
-- TODO(level 3): [ ] make folders on the basis of region, gender, age
+- [x] TODO(level 1): use harder examples with more than 2 speakers
+- [ ] TODO(level 1): use files given by flipkart.
+- [ ] TODO(level 2): change audio segments length.
+- [ ] TODO(level 3): make folders on the basis of region, gender, age
 ##### Options:
 - [x] download and prepare fresh on each system. => Going with this. With 8 cpu cores, it takes around 10 mins to pre-process the dataset and another 10 for downloading around 300Mb dataset.
 - [ ] download and prepare once and upload to different systems.
 ### 3)Setup the network and parameters
-- [x]Same model as voice filter
+- [x] Same model as voice filter
 ### 4)Train
 ##### Options:
 - Train on cpus, and use multiple cores if possible.
