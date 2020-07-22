@@ -9,6 +9,7 @@ import numpy as np
 import Consts
 import models
 
+import time
 #progress bar
 from tqdm import tqdm
 
@@ -97,3 +98,9 @@ def train(dataloader, device, lr, num_epochs):
                 chkpt_path = os.path.join(extractor_pth, f"extractor_epoch-{n}_batch-{batch_id}.pt")
                 torch.save(extractor.state_dict(), chkpt_path)
                 print("checkpoint created!")
+
+    #save the final version
+    time_stamp = str(f"{time.localtime().tm_date}-{time.localtime().tm_mon}")
+    chkpt_path = os.path.join(extractor_pth, f"extractor_final_{time_stamp}.pt")
+    torch.save(extractor.state_dict(), chkpt_path)
+    print("model saved!")
