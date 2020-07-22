@@ -16,9 +16,9 @@ import Consts
 
 class customDataset(Dataset):
     def __init__(self):
-        self.Targets = glob.glob(os.path.join("./datasets/processed/size=10" , "**/target.pt"), recursive=True)
-        self.Dvecs = glob.glob(os.path.join("./datasets/processed/size=10", "**/dvec.pt"), recursive=True)
-        self.Mixed = glob.glob(os.path.join("./datasets/processed/size=10", "**/mixed.pt"), recursive=True) 
+        self.Targets = glob.glob(os.path.join( Consts.DATA_DIR, "**/target.pt"), recursive=True)
+        self.Dvecs = glob.glob(os.path.join(Consts.DATA_DIR, "**/dvec.pt"), recursive=True)
+        self.Mixed = glob.glob(os.path.join(Consts.DATA_DIR, "**/mixed.pt"), recursive=True) 
 
         # print(len(self.Targets))
         # print(len(self.Dvecs))
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     embedder_pth = os.path.join(Consts.MODELS_DIR, "embedder.pt")
     embedder.load_state_dict(torch.load(embedder_pth, map_location=torch.device("cpu")))    
     
-    extractor_pth = os.path.join(Consts.MODELS_DIR, "extractor/extractor_epoch-0_batch-210.pt")
+    extractor_pth = os.path.join(Consts.MODELS_DIR, "extractor/extractor_epoch-0_batch-360.pt")
     extractor = torch.nn.DataParallel(extractor)
     extractor.load_state_dict(torch.load(extractor_pth, map_location=torch.device("cpu")))
 
@@ -77,32 +77,37 @@ if __name__ == "__main__":
     )
 
     print("dataset_size:", data.__len__())
-    inp, targ, dvec = data_loader.dataset.__getitem__(1)
+    inp, targ, dvec = data_loader.dataset.__getitem__(3)
     inp_wav = librosa.core.istft(inp)
     print("playing mixed audio")
-    sounddevice.play(inp_wav, samplerate=10000)
-    time.sleep(3)
+    # sounddevice.play(inp_wav, samplerate=10000)
+    # time.sleep(3)
 
     print("playing target audio")
     targ_wav = librosa.core.istft(targ)
-    sounddevice.play(targ_wav, samplerate=10000)
-    time.sleep(3)
+    # sounddevice.play(targ_wav, samplerate=10000)
+    # time.sleep(3)
 
     # get mask
-    # dvec = torch.from_numpy(dvec).detach()
-    # dvec = embedder(dvec)
-    # dvec = dvec.unsqueeze(0)
-    # inp = torch.from_numpy(np.abs(inp)).detach()
-    # inp = inp.unsqueeze(0)
-    # mask = extractor(inp, dvec)
-    # output = (mask * inp).detach()
-    # output = output.squeeze(0)
-    # output = output.numpy()  
-    # # print(output)
-    # final_wav = librosa.core.istft(
-    #     output, 
-    # )
-    # final_wav = final_wav * 20 
-    # print("playing final audio")
+    dvec = torch.from_numpy(dvec).detach()
+    dvec = embedder(dvec)
+    dvec = dvec.unsqueeze(0)
+    inp = torch.from_numpy(np.abs(inp)).detach()
+    inp = inp.unsqueeze(0)
+    mask = extractor(inp, dvec)
+    output = (mask * inp).detach()
+    output = output.squeeze(0)
+    output = output.numpy()  
+    # print(output)
+    final_wav = librosa.core.istft(
+        output, 
+    )
+    final_wav = final_wav * 20 #20dB increase in volume
+    print("playing final audio")
     # sounddevice.play(final_wav, samplerate=10000)
-    # time.sleep(3)
+    # time.sleep(4)
+
+    #save all files for reference
+    librosa.output.write_wav("./Results/noisy.wav", inp_wav, sr=10000)
+    librosa.output.write_wav("./Results/clean.wav", targ_wav, sr=10000)
+    librosa.output.write_wav("./Results/output.wav", final_wav, sr=10000)
