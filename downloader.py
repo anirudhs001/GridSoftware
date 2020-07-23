@@ -18,15 +18,16 @@ import Consts
 DATA_DIR_RAW = "./datasets/raw/"
 DATA_DIR_PROCESSED = "./datasets/processed"
 SAMPLING_RATE = Consts.SAMPLING_RATE 
-DATASET_SIZE = 10 #TODO: change this
+DATASET_SIZE = 10000 #TODO: change this
 NUM_SPEAKERS = 2
 BATCH_SIZE = min(cpu_count() * 125, DATASET_SIZE) #TODO:change this if DATASET_SIZE changed
-
+a = 0.5 #ratio of librispeech data in the prepared dataset
 ####################
 #   PREPARE DATA
 ####################
 
-# DATASET_SIZE = number of samples to make
+
+# n = number of samples to make
 # NUM_SPEAKERS(2<=integer<=5) number of simultaneous speakers
 def prep_data(n=1e5, num_spkrs=2, save_wav=False):
     
@@ -35,24 +36,46 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=False):
     if not (os.path.exists(outDir)):
         os.mkdir(outDir)
         
-    #get all speakers(foldernames) 
+    #get all speakers(foldernames) from LIBRISPEECH
     all_speakers = glob.glob(os.path.join(DATA_DIR_RAW, "LibriSpeech/dev-clean", "*"))
     all_speakers = [glob.glob(os.path.join(spkr_path, "**", "*.flac"), recursive=True) for spkr_path in all_speakers]
     all_speakers = [x for x in all_speakers if len(x) > 2]
 
+    #noisy files 1
     noises = glob.glob(os.path.join(DATA_DIR_RAW, "Noisy/*/*.wav"), recursive=True)
+    
+    #speakers from flipkart
+    Flipkart_files = "./datasets/raw/Flipkart/"
+    flipkart_speakers = glob.glob(os.path.join(Flipkart_files, "clean/*"))
+     
+    #noisy files 2
+    flipkart_unclean = glob.glob(os.path.join(Flipkart_files, "unused/*"))
+    #concatenate all noises
+    np.concatenate((noises, flipkart_unclean), axis=0)
+
     i = 0
     while(i < n):
-        #randomly select some speakers batch_size times
-        s_slct = [random.sample(all_speakers, NUM_SPEAKERS - 1) for x in range(BATCH_SIZE)]
-        noise_smpl = [random.choice(noises) for _ in range(BATCH_SIZE)]  
+        ##################################################################################################
+        ##LOGIC: 0= < a <= 1, (a * batch_size) items are from librispeech and (1-a) * batch_size speakers 
+        ## from the flipkart's folder. noise for each sample is randomly picked from the folders: babble,
+        ## airport, restaurant and unused.
+        ##################################################################################################
+        
+        #randomly select some speakers [a * batch_size] times
+        s_slct_LIBRISPEECH = [random.sample(all_speakers, NUM_SPEAKERS - 1) for x in range(int(a*BATCH_SIZE))]
 
+        #randomly select some speakers batch_size - [a*batch_size] times
+        s_slct_flipkart = [random.choice(flipkart_speakers) for _ in range(BATCH_SIZE - int(a*BATCH_SIZE))]
+        noise_smpl = [random.choice(noises) for _ in range(BATCH_SIZE)]  
+        
         #run on all available cpus
         with Pool(cpu_count()) as p:
             p.starmap(mix, [(s_slct[j], noise_smpl[j], i + j, outDir, save_wav) for j in range(BATCH_SIZE)]) 
         i = i + BATCH_SIZE 
         #status update
         print(f"{i}/{n} files done!")
+
+    
 
 # n(2<=integer<=5) number of simultaneous speakers
 # music(bool) = True if need to add music as well
