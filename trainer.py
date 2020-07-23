@@ -14,7 +14,7 @@ import time
 from tqdm import tqdm
 
 
-def train(dataloader, device, lr, num_epochs):
+def train(dataloader, device, lr, num_epochs, extractor_source):
 
     #load pretrained embedder
     embedder = models.Embedder()
@@ -28,19 +28,27 @@ def train(dataloader, device, lr, num_epochs):
     embedder.load_state_dict(torch.load(embedder_pth, map_location=device))
     print("embedder loaded!")
     #embedder in eval mode
+    embedder.to(device)
     embedder.eval()
+    
+    #Extractor
+    extractor = models.Extractor()
+    if device == "cuda:0":
+        #put model on gpu
+        extractor = torch.nn.DataParallel(extractor, device_ids=device) 
+    elif device == "cpu":
+        # TRAIN WITH MULTIPLE CPUS!
+        extractor = torch.nn.DataParallel(extractor, device_ids=None) 
 
     #load latest extractor checkpoints if exist:
-    extractor = models.Extractor()
-    extractor_pth = os.path.join(Consts.MODELS_DIR, "extractor")
-    if not os.path.exists(extractor_pth):
-        os.mkdir(extractor_pth)
-    chkpt_list = glob.glob(os.path.join(extractor_pth, "*.pt"))
+    if not os.path.exists(extractor_source):
+        os.mkdir(extractor_source)
+
+    chkpt_list = sorted(glob.glob(os.path.join(extractor_source, "*.pt")))
     if len( chkpt_list ):
-        chkpt = chkpt_list[-1]
+        chkpt = chkpt_list[-2]
         extractor.load_state_dict(torch.load(chkpt, map_location=device))
-    # TRAIN WITH MULTIPLE CPUS!
-    extractor = torch.nn.DataParallel(extractor) 
+        print(f"Loaded extractor: {chkpt}.")
     extractor.train()
 
     #optimizer and loss func
@@ -50,7 +58,16 @@ def train(dataloader, device, lr, num_epochs):
     #dataset_size for LOGGING
     dataset_size = dataloader.dataset.__len__()
     step_size = int(np.max((dataset_size / 100, 1)))
-    loss_list = list() # list to hold losses after each step_size number of batches
+    # loss_list = list() # list to hold losses after each step_size number of batches
+
+    #extractor_pth to store checkpoints
+    time_stamp = str(f"-{time.localtime().tm_mday}-{time.localtime().tm_mon}-{time.localtime().tm_hour}")
+    extractor_dest = os.path.join(Consts.MODELS_DIR, f"extractor{time_stamp}")
+    if not os.path.exists(extractor_dest):
+        os.mkdir(extractor_dest)
+    #sanity check
+    print(f"saving checkpoints at: {extractor_dest}")
+
     #training loop
     for n in range(num_epochs):
         for batch_id, batch in tqdm(enumerate(dataloader), desc="Batch"):
@@ -95,12 +112,12 @@ def train(dataloader, device, lr, num_epochs):
             if batch_id % step_size == 0 :
                 # loss_list.append(loss.item())
                 #save checkpoint
-                chkpt_path = os.path.join(extractor_pth, f"extractor_epoch-{n}_batch-{batch_id}.pt")
+                chkpt_path = os.path.join(extractor_dest, f"extractor_epoch-{n}_batch-{batch_id}.pt")
                 torch.save(extractor.state_dict(), chkpt_path)
                 print("checkpoint created!")
 
     #save the final version
-    time_stamp = str(f"{time.localtime().tm_date}-{time.localtime().tm_mon}")
-    chkpt_path = os.path.join(extractor_pth, f"extractor_final_{time_stamp}.pt")
+    time_stamp = str(f"{time.localtime().tm_mday}-{time.localtime().tm_mon}-{time.localtime().tm_hour}")
+    chkpt_path = os.path.join(extractor_dest, f"extractor_final_{time_stamp}.pt")
     torch.save(extractor.state_dict(), chkpt_path)
     print("model saved!")
