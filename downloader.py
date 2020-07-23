@@ -14,6 +14,9 @@ import glob
 from multiprocessing import Pool, cpu_count
 
 import Consts
+
+from tqdm import tqdm
+
 # Constants
 DATA_DIR_RAW = "./datasets/raw/"
 DATA_DIR_PROCESSED = "./datasets/processed"
@@ -22,10 +25,21 @@ DATASET_SIZE = 10000 #TODO: change this
 NUM_SPEAKERS = 2
 BATCH_SIZE = min(cpu_count() * 125, DATASET_SIZE) #TODO:change this if DATASET_SIZE changed
 a = 0.5 #ratio of librispeech data in the prepared dataset
+
 ####################
 #   PREPARE DATA
 ####################
 
+#shortens a numpy array(arr) to fixed length(L). adds extra padding(zeros) 
+# if len(arr) is less than L.
+# returns the shorten'd numpy array.
+def shorten_file(arr, L):
+    if len(arr) < L:
+        temp = arr
+        arr = np.zeros(shape=L)
+        arr[0:len(temp)] = temp
+    arr = arr[:L]
+    return arr
 
 # n = number of samples to make
 # NUM_SPEAKERS(2<=integer<=5) number of simultaneous speakers
@@ -46,15 +60,18 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=False):
     
     #speakers from flipkart
     Flipkart_files = "./datasets/raw/Flipkart/"
-    flipkart_speakers = glob.glob(os.path.join(Flipkart_files, "clean/*"))
-     
+    flipkart_speakers = glob.glob(os.path.join(Flipkart_files, "clean_files/*"))
+    flipkart_speakers = [glob.glob(os.path.join(spkr_path, "*")) for spkr_path in flipkart_speakers]
+    flipkart_speakers = [spkr for spkr in flipkart_speakers if len(spkr) > 2]
+    
     #noisy files 2
     flipkart_unclean = glob.glob(os.path.join(Flipkart_files, "unused/*"))
     #concatenate all noises
-    np.concatenate((noises, flipkart_unclean), axis=0)
+    noises = np.concatenate((noises, flipkart_unclean), axis=0)
 
-    i = 0
-    while(i < n):
+    i = 1
+    pbar = tqdm(total=n)
+    while(i <= n):
         ##################################################################################################
         ##LOGIC: 0= < a <= 1, (a * batch_size) items are from librispeech and (1-a) * batch_size speakers 
         ## from the flipkart's folder. noise for each sample is randomly picked from the folders: babble,
@@ -65,15 +82,23 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=False):
         s_slct_LIBRISPEECH = [random.sample(all_speakers, NUM_SPEAKERS - 1) for x in range(int(a*BATCH_SIZE))]
 
         #randomly select some speakers batch_size - [a*batch_size] times
-        s_slct_flipkart = [random.choice(flipkart_speakers) for _ in range(BATCH_SIZE - int(a*BATCH_SIZE))]
+        s_slct_flipkart = [random.sample(flipkart_speakers, NUM_SPEAKERS - 1) for _ in range(BATCH_SIZE - int(a*BATCH_SIZE))]
+
+        #concatenate speakers
+        spkr_select = np.concatenate(( s_slct_flipkart, s_slct_LIBRISPEECH ))
+
+        #randomly select some noise files for each batch
         noise_smpl = [random.choice(noises) for _ in range(BATCH_SIZE)]  
         
         #run on all available cpus
         with Pool(cpu_count()) as p:
-            p.starmap(mix, [(s_slct[j], noise_smpl[j], i + j, outDir, save_wav) for j in range(BATCH_SIZE)]) 
+            p.starmap(mix, [(spkr_select[j], noise_smpl[j], i + j, outDir, save_wav) for j in range(BATCH_SIZE)]) 
         i = i + BATCH_SIZE 
         #status update
-        print(f"{i}/{n} files done!")
+        # print(f"{i}/{n} files done!")
+        pbar.update(1)
+
+    pbar.close()
 
     
 
@@ -113,26 +138,13 @@ def mix(speakers_list, noise_smpl, sample_num, outDir, save_wav=False):
     s_rest_audio = [librosa.effects.trim(spkr_audio, top_db=20)[0] for spkr_audio in s_rest_audio]
     # noise_audio = librosa.effects.trim(noise_audio, top_db=20)
 
-    #fit audio to 3 seconds, discard if short
-    # (not checking noise files length cuz they are short ): )
+    #fit audio to 3 seconds, add zero padding if short
+    #most noise files are less than 3 seconds
     L = SAMPLING_RATE * 3
-    if len(target_dvec) < L or len(target_audio) < L:
-        # print("file too short")
-        return 
-    for sample in s_rest_audio:
-        if len(sample) < L:
-            # print("file too short")
-            return 
-    target_audio = target_audio[:L]
-        #don't shorten dvec
-    s_rest_audio = [spkr_audio[:L] for spkr_audio in s_rest_audio]
-    #make noise same len as rest(add padding)
-    if len(noise_audio) < L:
-        temp = noise_audio
-        noise_audio = np.zeros(shape=L)
-        noise_audio[0:len(temp)] = temp
-    elif len(noise_audio) >= L:
-        noise_audio = noise_audio[:L]
+    target_audio = shorten_file(target_audio, L)
+    #dont shorten dvec
+    s_rest_audio = [shorten_file(s, L) for s in s_rest_audio]
+    noise_audio = shorten_file(noise_audio, L)
 
     #mix files
     mixed = np.copy(target_audio)
@@ -141,12 +153,15 @@ def mix(speakers_list, noise_smpl, sample_num, outDir, save_wav=False):
 
     #norm
     norm = np.max(np.abs(mixed))
-    target_audio, mixed = target_audio/norm, mixed/norm
-    
+    target_dvec, target_audio, mixed = target_dvec/norm, target_audio/norm, mixed/norm
+     
+
     os.mkdir(outpath)
+    #save wavs if required 
     if save_wav:
         librosa.output.write_wav(os.path.join(outpath, "target.wav"), target_audio, sr=SAMPLING_RATE)
         librosa.output.write_wav(os.path.join(outpath, "mixed.wav"), mixed, sr=SAMPLING_RATE)
+        librosa.output.write_wav(os.path.join(outpath, "dvec.wav"), target_dvec, sr=SAMPLING_RATE)
 
     #convert to spectograms
     target_audio = librosa.stft(target_audio)
@@ -162,11 +177,11 @@ def mix(speakers_list, noise_smpl, sample_num, outDir, save_wav=False):
     mag = np.abs(target_dvec) ** 2
     fltr = librosa.filters.mel(sr=SAMPLING_RATE, n_fft=Consts.dvec_nfft, n_mels=40)
     target_dvec = np.log10(np.dot(fltr, mag) + 1e-6)
+    
     #save to files
     target_path = os.path.join(outpath, "target.pt")
     mixed_path = os.path.join(outpath, "mixed.pt")
     dvec_path = os.path.join(outpath, "dvec.pt")
-    
 
     torch.save(target_audio, target_path)
     torch.save(target_dvec, dvec_path)
@@ -196,5 +211,5 @@ if __name__ == "__main__":
         os.mkdir(DATA_DIR_PROCESSED)
     print("preparing data...")
     print(f"Available number of cpu cores:{cpu_count()}")
-    prep_data(n=DATASET_SIZE, num_spkrs=2, save_wav=True)
+    prep_data(n=DATASET_SIZE, num_spkrs=2, save_wav=False) #TODO:change save_wav!
     print("datset preparation done!")
