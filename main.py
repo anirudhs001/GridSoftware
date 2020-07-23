@@ -86,6 +86,12 @@ if __name__ == "__main__":
 
     #Train!
     print("beginning training:")
-    trainer.train(data_loader, device=device, lr=1e-3, num_epochs=1 )
+    trainer.train(
+        data_loader,
+        device=device,
+        lr=1e-3,
+        num_epochs=1,
+        extractor_source=os.path.join(Consts.MODELS_DIR, "extractor-21-7")
+    )
       
     print("training done!")
