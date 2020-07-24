@@ -95,11 +95,11 @@ class Extractor(nn.Module):
       
     )
 
-    self.lstm = nn.LSTM( 728, 400,
+    self.lstm = nn.LSTM( 5064, 400,
                         batch_first=True, bidirectional=True)
     
     self.fc1 = nn.Linear(2*400, 600)
-    self.fc2 = nn.Linear(600, 59)
+    self.fc2 = nn.Linear(600, 601)
 
   def forward(self, x, dvec):
     # x: [B, T, num_freq]
@@ -124,7 +124,5 @@ class Extractor(nn.Module):
     x = self.fc1(x) # x: [B, T, fc1_dim]
     x = F.relu(x)
     x = self.fc2(x) # x: [B, T, fc2_dim], fc2_dim == num_freq
-
-    #TRYING CROSS CONNECTION:
     x = torch.sigmoid(x)
     return x
