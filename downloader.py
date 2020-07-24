@@ -21,25 +21,14 @@ from tqdm import tqdm
 DATA_DIR_RAW = "./datasets/raw/"
 DATA_DIR_PROCESSED = "./datasets/processed"
 SAMPLING_RATE = Consts.SAMPLING_RATE 
-DATASET_SIZE = 10000 #TODO: change this
+DATASET_SIZE = 10 #TODO: change this
 NUM_SPEAKERS = 2
-BATCH_SIZE = min(cpu_count() * 125, DATASET_SIZE) #TODO:change this if DATASET_SIZE changed
+BATCH_SIZE = min(cpu_count() * 125, DATASET_SIZE) 
 a = 0.5 #ratio of librispeech data in the prepared dataset
 
 ####################
 #   PREPARE DATA
 ####################
-
-#shortens a numpy array(arr) to fixed length(L). adds extra padding(zeros) 
-# if len(arr) is less than L.
-# returns the shorten'd numpy array.
-def shorten_file(arr, L):
-    if len(arr) < L:
-        temp = arr
-        arr = np.zeros(shape=L)
-        arr[0:len(temp)] = temp
-    arr = arr[:L]
-    return arr
 
 # n = number of samples to make
 # NUM_SPEAKERS(2<=integer<=5) number of simultaneous speakers
@@ -96,7 +85,7 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=False):
         i = i + BATCH_SIZE 
         #status update
         # print(f"{i}/{n} files done!")
-        pbar.update(1)
+        pbar.update(1000)
 
     pbar.close()
 
@@ -111,6 +100,32 @@ def mix(speakers_list, noise_smpl, sample_num, outDir, save_wav=False):
     # print(sample_num)
     # print(outDir)
     
+    #shortens a numpy array(arr) to fixed length(L). adds extra padding(zeros) 
+    # if len(arr) is less than L.
+    # returns the shorten'd numpy array.
+    def shorten_file(arr, L):
+        if len(arr) < L:
+            temp = arr
+            arr = np.zeros(shape=L)
+            arr[0:len(temp)] = temp
+        arr = arr[:L]
+        return arr
+
+    #converts an input wav into (signal, phase) pair. stft the input along the way
+    #shamelessly borrowed from seungwonpark's repo
+    def wavTOspec(y, sr,n_fft):
+
+        y = librosa.core.stft(
+            y, 
+            n_fft=n_fft,
+            hop_length=Consts.hoplength,
+            win_length=Consts.winlength
+        )
+        S = 20.0 * np.log10(np.maximum(1e-5, np.abs(y))) - 20.0
+        S, D = np.clip(S / 100, -1.0, 0) + 1.0, np.angle(y)
+        S, D = S.T, D.T
+        return S, D
+
     outpath = os.path.join(outDir, "sample-"+str(sample_num))
     if os.path.exists(outpath): #file already exists, exit
         return 
@@ -164,14 +179,22 @@ def mix(speakers_list, noise_smpl, sample_num, outDir, save_wav=False):
         librosa.output.write_wav(os.path.join(outpath, "dvec.wav"), target_dvec, sr=SAMPLING_RATE)
 
     #convert to spectograms
-    target_audio = librosa.stft(target_audio)
-    target_dvec = librosa.stft(
+    target_audio_mag, _ = wavTOspec(
+        target_audio,
+        Consts.SAMPLING_RATE,
+        n_fft=Consts.normal_nfft
+    )
+    mixed_audio_mag, _ = wavTOspec(
+        mixed,
+        Consts.SAMPLING_RATE,
+        n_fft=Consts.normal_nfft
+    )
+    target_dvec  = librosa.stft(
         target_dvec, 
         n_fft=Consts.dvec_nfft,
-        hop_length=Consts.dvec_hoplength,
-        win_length=Consts.dvec_winlength
+        hop_length=Consts.hoplength,
+        win_length=Consts.winlength
     )
-    mixed = librosa.stft(mixed)
 
     #convert dvec spectrogram to melspectrogram
     mag = np.abs(target_dvec) ** 2
@@ -183,10 +206,11 @@ def mix(speakers_list, noise_smpl, sample_num, outDir, save_wav=False):
     mixed_path = os.path.join(outpath, "mixed.pt")
     dvec_path = os.path.join(outpath, "dvec.pt")
 
-    torch.save(target_audio, target_path)
+    torch.save(target_audio_mag, target_path)
     torch.save(target_dvec, dvec_path)
-    torch.save(mixed, mixed_path)
+    torch.save(mixed_audio_mag, mixed_path)
     
+
 
 
 if __name__ == "__main__":
@@ -211,5 +235,5 @@ if __name__ == "__main__":
         os.mkdir(DATA_DIR_PROCESSED)
     print("preparing data...")
     print(f"Available number of cpu cores:{cpu_count()}")
-    prep_data(n=DATASET_SIZE, num_spkrs=2, save_wav=False) #TODO:change save_wav!
+    prep_data(n=DATASET_SIZE, num_spkrs=2, save_wav=True) #TODO:change save_wav!
     print("datset preparation done!")
