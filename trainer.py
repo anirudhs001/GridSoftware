@@ -6,6 +6,8 @@ from torch import nn, optim
 import requests
 import numpy as np
 
+from asteroid.filterbanks import transforms
+
 import Consts
 import models
 
@@ -14,7 +16,7 @@ import time
 from tqdm import tqdm
 
 
-def train(dataloader, device, lr, num_epochs, extractor_source):
+def train(dataloader,loss_func, device, lr, num_epochs, extractor_source):
 
     #load pretrained embedder
     embedder = models.Embedder()
@@ -41,19 +43,20 @@ def train(dataloader, device, lr, num_epochs, extractor_source):
         extractor = torch.nn.DataParallel(extractor, device_ids=None) 
 
     #load latest extractor checkpoints if exist:
-    if not os.path.exists(extractor_source):
-        os.mkdir(extractor_source)
+    if extractor_source is None:
+        print("No extractor provided, starting from scratch.")
 
-    chkpt_list = sorted(glob.glob(os.path.join(extractor_source, "*.pt")))
-    if len( chkpt_list ):
-        chkpt = chkpt_list[-2]
-        extractor.load_state_dict(torch.load(chkpt, map_location=device))
-        print(f"Loaded extractor: {chkpt}.")
+    if extractor_source is not None:
+        chkpt_list = sorted(glob.glob(os.path.join(extractor_source, "*.pt")))
+        if len( chkpt_list ):
+            chkpt = chkpt_list[-2]
+            extractor.load_state_dict(torch.load(chkpt, map_location=device))
+            print(f"Loaded extractor: {chkpt}.")
     extractor.train()
 
     #optimizer and loss func
     optimizer = optim.Adam(extractor.parameters(), lr=lr)
-    loss_func = nn.MSELoss()
+    loss_func = loss_func
 
     #dataset_size for LOGGING
     dataset_size = dataloader.dataset.__len__()
@@ -95,6 +98,12 @@ def train(dataloader, device, lr, num_epochs, extractor_source):
             output = mask * mixed_mag
 
             #2) loss
+            # output = transforms.take_mag(output)
+            # target_mag = transforms.take_mag(target_mag)
+            #Sanity check
+            # print(output.shape)
+            # print(target_mag.shape)
+            loss_func = nn.MSELoss()
             loss = loss_func(output, target_mag)
 
             #3) clear gradient cache

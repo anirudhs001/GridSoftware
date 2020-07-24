@@ -1,12 +1,15 @@
 
 import torch
 from torch.utils.data import Dataset, DataLoader
+from torch import nn
 import numpy as np
 import librosa
 import os
 import glob
 import sounddevice
 import time
+
+from asteroid.losses import SingleSrcPMSQE
 
 import Consts
 import models
@@ -57,6 +60,7 @@ def collate_fn(batch):
 
 ########################################################
 
+
 ## Run it:
 if __name__ == "__main__":
     #create datsets and dataloader
@@ -65,15 +69,16 @@ if __name__ == "__main__":
         data,
         batch_size=16,
         collate_fn=collate_fn,
-        shuffle=True
+        shuffle=True,
+        num_workers=0
     )
 
     # testing: WORKS!
-    print(data_loader.dataset.__len__())
+    print("dataset size:",data_loader.dataset.__len__())
     inp, targ, dvec = data_loader.dataset.__getitem__(5)
-    # print(inp.size)
-    # print(f"targ size{targ.size}")
-    # print("dvec size",dvec.size)
+    print(f"inp size{inp.size}")
+    print(f"targ size{targ.size}")
+    print("dvec size",dvec.size)
     # targ_wav = librosa.core.istft(targ)
     # sounddevice.play(targ_wav, samplerate=10000)
     # time.sleep(3)
@@ -83,15 +88,20 @@ if __name__ == "__main__":
     embedder = models.Embedder()
     extractor = models.Extractor()
 
+    #Using PMSQE loss 
+    loss_func = SingleSrcPMSQE(sample_rate=16000) 
+    # loss_func = nn.MSELoss()
 
     #Train!
     print("beginning training:")
     trainer.train(
         data_loader,
+        loss_func=loss_func,
         device=device,
         lr=1e-3,
         num_epochs=1,
-        extractor_source=os.path.join(Consts.MODELS_DIR, "extractor-21-7")
+        # extractor_source=os.path.join(Consts.MODELS_DIR, "extractor-21-7"
+        extractor_source=None
     )
       
     print("training done!")
