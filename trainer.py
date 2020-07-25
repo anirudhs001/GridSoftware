@@ -6,8 +6,6 @@ from torch import nn, optim
 import requests
 import numpy as np
 
-from asteroid.filterbanks import transforms
-
 import Consts
 import models
 
@@ -16,7 +14,14 @@ import time
 from tqdm import tqdm
 
 
-def train(dataloader,loss_func, device, lr, num_epochs, extractor_source):
+def train(
+    dataloader,
+    loss_func,
+    device,
+    lr,
+    num_epochs,
+    extractor_source,
+    extractor_dest):
 
     #load pretrained embedder
     embedder = models.Embedder()
@@ -65,9 +70,9 @@ def train(dataloader,loss_func, device, lr, num_epochs, extractor_source):
 
     #extractor_pth to store checkpoints
     time_stamp = str(f"-{time.localtime().tm_mday}-{time.localtime().tm_mon}-{time.localtime().tm_hour}")
-    extractor_dest = os.path.join(Consts.MODELS_DIR, f"extractor{time_stamp}")
+    extractor_dest = os.path.join(extractor_dest, f"extractor{time_stamp}")
     if not os.path.exists(extractor_dest):
-        os.mkdir(extractor_dest)
+        os.makedirs(extractor_dest, exist_ok=True)
     #sanity check
     print(f"saving checkpoints at: {extractor_dest}")
 
@@ -87,7 +92,7 @@ def train(dataloader,loss_func, device, lr, num_epochs, extractor_source):
                 emb = embedder(dvec)
                 dvec_list.append(emb)
             
-            dvec_mel = torch.stack(dvec_list, dim=0)
+            dvec_mel = torch.stack(dvec_list, dim=0).to(device)
             #no gradients for dvec
             dvec_mel.detach()
 
@@ -95,7 +100,7 @@ def train(dataloader,loss_func, device, lr, num_epochs, extractor_source):
             
             #1) predict output
             mask = extractor(mixed_mag, dvec_mel)
-            output = mask * mixed_mag
+            output = (mask * mixed_mag).to(device)
 
             #2) loss
             # output = transforms.take_mag(output)
@@ -103,7 +108,7 @@ def train(dataloader,loss_func, device, lr, num_epochs, extractor_source):
             #Sanity check
             # print(output.shape)
             # print(target_mag.shape)
-            loss_func = nn.MSELoss()
+            # loss_func = nn.MSELoss()
             loss = loss_func(output, target_mag)
 
             #3) clear gradient cache
@@ -126,6 +131,7 @@ def train(dataloader,loss_func, device, lr, num_epochs, extractor_source):
                 print("checkpoint created!")
 
     #save the final version
+    print("final loss: ", loss.item())
     time_stamp = str(f"{time.localtime().tm_mday}-{time.localtime().tm_mon}-{time.localtime().tm_hour}")
     chkpt_path = os.path.join(extractor_dest, f"extractor_final_{time_stamp}.pt")
     torch.save(extractor.state_dict(), chkpt_path)
