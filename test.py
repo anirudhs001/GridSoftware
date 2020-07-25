@@ -59,7 +59,7 @@ if __name__ == "__main__":
     embedder.load_state_dict(torch.load(embedder_pth, map_location=torch.device("cpu")))    
     embedder.eval()
     
-    extractor_pth = os.path.join(Consts.MODELS_DIR, "extractor-24-7-11/extractor_final_24-7-11.pt")
+    extractor_pth = os.path.join(Consts.MODELS_DIR, "extractor-25-7-0/extractor_epoch-0_batch-400.pt")
     extractor = torch.nn.DataParallel(extractor)
     extractor.load_state_dict(torch.load(extractor_pth, map_location=torch.device("cpu")))
     extractor.eval()
@@ -96,6 +96,7 @@ if __name__ == "__main__":
     dvec = dvec.unsqueeze(0)
     mixed_mag = mixed_mag.unsqueeze(0) 
     #get mask
+    print(f"dvec size:{dvec.shape}, mixed_mag size:{mixed_mag.shape}")
     mask = extractor(mixed_mag, dvec)
     output = mixed_mag*mask
     output = output[0].detach().numpy()
@@ -110,4 +111,4 @@ if __name__ == "__main__":
     #save all files for reference
     librosa.output.write_wav("./Results/noisy.wav", mixed_wav, sr=16000)
     librosa.output.write_wav("./Results/clean.wav", targ_wav, sr=16000)
-    librosa.output.write_wav("./Results/output.wav", final_wav, sr=10000)
+    librosa.output.write_wav("./Results/output.wav", final_wav, sr=16000)

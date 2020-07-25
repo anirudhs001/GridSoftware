@@ -51,18 +51,18 @@ class Embedder(nn.Module):
 class Extractor(nn.Module):
   def __init__(self):
     super().__init__()
-
+    #inp = bs x 301 x 601
     # 8 convs, 1 lstm , 2 fc
     self.conv = nn.Sequential(
       # cnn1
       nn.ZeroPad2d((3, 3, 0, 0)),
       nn.Conv2d(1, 64, kernel_size=(1, 7), dilation=(1, 1)),
-      nn.BatchNorm2d(64), nn.ReLU(),
+      nn.BatchNorm2d(64), nn.ReLU(), #bs x 300 x 600
 
       # cnn2
       nn.ZeroPad2d((0, 0, 3, 3)),
       nn.Conv2d(64, 64, kernel_size=(7, 1), dilation=(1, 1)),
-      nn.BatchNorm2d(64), nn.ReLU(),
+      nn.BatchNorm2d(64), nn.ReLU(), #bs x 
 
       # cnn3
       nn.ZeroPad2d(2),
