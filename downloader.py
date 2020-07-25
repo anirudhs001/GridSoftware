@@ -21,7 +21,7 @@ from tqdm import tqdm
 DATA_DIR_RAW = "./datasets/raw/"
 DATA_DIR_PROCESSED = "./datasets/processed"
 SAMPLING_RATE = Consts.SAMPLING_RATE 
-DATASET_SIZE = 10 #TODO: change this
+DATASET_SIZE = 10000 #TODO: change this
 NUM_SPEAKERS = 2
 BATCH_SIZE = min(cpu_count() * 125, DATASET_SIZE) 
 a = 0.5 #ratio of librispeech data in the prepared dataset
@@ -157,7 +157,8 @@ def mix(speakers_list, noise_smpl, sample_num, outDir, save_wav=False):
     #most noise files are less than 3 seconds
     L = SAMPLING_RATE * 3
     target_audio = shorten_file(target_audio, L)
-    #dont shorten dvec
+    #dont shorten dvec TODO: fix too short dvecs
+    target_dvec = shorten_file(target_dvec, L)
     s_rest_audio = [shorten_file(s, L) for s in s_rest_audio]
     noise_audio = shorten_file(noise_audio, L)
 

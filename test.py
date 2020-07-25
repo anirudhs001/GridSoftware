@@ -12,48 +12,42 @@ import numpy as np
 import models
 import Consts
 
-##DATASET and DATALOADER:
-
-class customDataset(Dataset):
-    def __init__(self):
-        self.Targets = glob.glob(os.path.join( Consts.DATA_DIR, "**/target.pt"), recursive=True)
-        self.Dvecs = glob.glob(os.path.join(Consts.DATA_DIR, "**/dvec.pt"), recursive=True)
-        self.Mixed = glob.glob(os.path.join(Consts.DATA_DIR, "**/mixed.pt"), recursive=True) 
-
-        # print(len(self.Targets))
-        # print(len(self.Dvecs))
-        # print(len(self.Mixed))
-        assert len(self.Targets) == len(self.Dvecs) == len(self.Mixed),\
-        "number of targets, dvecs and mixed samples not same!"
-
-    def __len__(self):
-        return len(self.Targets)
-
-    def __getitem__(self, idx):
-        target = torch.load(self.Targets[idx]) 
-        dvec_mel = torch.load(self.Dvecs[idx])
-        mixed = torch.load(self.Mixed[idx])
-        # target = torch.from_file(self.Targets[idx])
-        # dvec_mel = torch.from_file(self.Dvecs[idx])
-        # mixed = torch.from_file(self.Mixed[idx])
-        return mixed, target, dvec_mel
-
-def collate_fn(batch):
-    targets_list = list()
-    mixed_list = list()
-    dvec_list = list() # unequally length, can't stack
-
-    for inp, targ, dvec_mel in batch:
-        #add spectrograms to list
-        mixed_list.append(torch.from_numpy(np.abs(inp)))
-        targets_list.append(torch.from_numpy(np.abs(targ) ))
-        dvec_list.append(torch.from_numpy(dvec_mel) )
+#TODO: get this
+#shamelessly borrowed from seungwonpark's repo
+#mag and phase are numpy arrays which contain the stft'ed audio's magnitude and 
+# phase info respectively.
+#returns: a numpy array of audio file.
+def specTOwav(mag, phase):
+    print(mag.shape, phase.shape)
+    mag, phase = mag.T, phase.T
+    #amp to dB
+    magdB = np.power(10, mag * 0.05)
+    #de-normalising
+    magdB = (np.clip(magdB, 0.0, 1.0) - 1.0) * 100 + 20.0
     
-    #stack
-    mixed_list = torch.stack(mixed_list, dim=0)
-    targets_list = torch.stack(targets_list, dim=0)
+    #inverse sample time fourier transform
+    stft_matrix = magdB * np.exp(1j*phase)
+    return librosa.istft(
+        stft_matrix,
+        hop_length=Consts.hoplength,
+        win_length=Consts.winlength
+    )
     
-    return mixed_list, targets_list, dvec_list
+
+#converts an input wav into (signal, phase) pair. stft the input along the way
+#shamelessly borrowed from seungwonpark's repo
+def wavTOspec(y, sr, n_fft):
+
+    y = librosa.core.stft(
+        y, 
+        n_fft=n_fft,
+        hop_length=Consts.hoplength,
+        win_length=Consts.winlength
+    )
+    S = 20.0 * np.log10(np.maximum(1e-5, np.abs(y))) - 20.0
+    S, D = np.clip(S / 100, -1.0, 0) + 1.0, np.angle(y)
+    S, D = S.T, D.T
+    return S, D
 
 if __name__ == "__main__":
 
@@ -63,51 +57,57 @@ if __name__ == "__main__":
 
     embedder_pth = os.path.join(Consts.MODELS_DIR, "embedder.pt")
     embedder.load_state_dict(torch.load(embedder_pth, map_location=torch.device("cpu")))    
+    embedder.eval()
     
-    extractor_pth = os.path.join(Consts.MODELS_DIR, "extractor/extractor_epoch-0_batch-360.pt")
+    extractor_pth = os.path.join(Consts.MODELS_DIR, "extractor-24-7-11/extractor_final_24-7-11.pt")
     extractor = torch.nn.DataParallel(extractor)
     extractor.load_state_dict(torch.load(extractor_pth, map_location=torch.device("cpu")))
+    extractor.eval()
 
-    data = customDataset()
-    data_loader = DataLoader(
-        data,
-        batch_size=16,
-        collate_fn=collate_fn,
-        shuffle=False
-    )
 
-    print("dataset_size:", data.__len__())
-    inp, targ, dvec = data_loader.dataset.__getitem__(3)
-    inp_wav = librosa.core.istft(inp)
+    #load input file
+    inp_path = glob.glob(os.path.join( Consts.DATA_DIR, "**/mixed.wav"))
+    inp_path = inp_path[0]
+    print(f"loading: {inp_path}")
+    mixed_wav, _ = librosa.load(inp_path,sr=Consts.SAMPLING_RATE)
+    mixed_mag, phase = wavTOspec(mixed_wav, sr=Consts.SAMPLING_RATE, n_fft=1200) 
+    mixed_mag = torch.from_numpy(mixed_mag)
     print("playing mixed audio")
-    # sounddevice.play(inp_wav, samplerate=10000)
+    # sounddevice.play(mixed_wav, samplerate=16000)
     # time.sleep(3)
 
+    #load target
+    targ_path = glob.glob(os.path.join(Consts.DATA_DIR, "**/target.wav"))
+    targ_path = targ_path[0]
+    targ_wav, _ = librosa.load(targ_path, sr=Consts.SAMPLING_RATE)
     print("playing target audio")
-    targ_wav = librosa.core.istft(targ)
-    # sounddevice.play(targ_wav, samplerate=10000)
+    # sounddevice.play(targ_wav, samplerate=16000)
     # time.sleep(3)
 
-    # get mask
-    dvec = torch.from_numpy(dvec).detach()
-    dvec = embedder(dvec)
+    #load dvec file
+    dvec_path = glob.glob(os.path.join(Consts.DATA_DIR, "**/dvec.pt"))
+    dvec_path = dvec_path[0]
+    dvec_mel = torch.load(dvec_path, map_location="cpu")
+    dvec_mel = torch.from_numpy(dvec_mel)
+
+    # begin inference
+    dvec = embedder(dvec_mel)
+    #make batches of dvec and mixed
     dvec = dvec.unsqueeze(0)
-    inp = torch.from_numpy(np.abs(inp)).detach()
-    inp = inp.unsqueeze(0)
-    mask = extractor(inp, dvec)
-    output = (mask * inp).detach()
-    output = output.squeeze(0)
-    output = output.numpy()  
+    mixed_mag = mixed_mag.unsqueeze(0) 
+    #get mask
+    mask = extractor(mixed_mag, dvec)
+    output = mixed_mag*mask
+    output = output[0].detach().numpy()
+    #get wav from spectrogram
+    final_wav = specTOwav(output, phase) #same phase as from mixed file
     # print(output)
-    final_wav = librosa.core.istft(
-        output, 
-    )
-    final_wav = final_wav * 20 #20dB increase in volume
+    # final_wav = final_wav * 20 #20dB increase in volume
     print("playing final audio")
     # sounddevice.play(final_wav, samplerate=10000)
     # time.sleep(4)
 
     #save all files for reference
-    librosa.output.write_wav("./Results/noisy.wav", inp_wav, sr=10000)
-    librosa.output.write_wav("./Results/clean.wav", targ_wav, sr=10000)
+    librosa.output.write_wav("./Results/noisy.wav", mixed_wav, sr=16000)
+    librosa.output.write_wav("./Results/clean.wav", targ_wav, sr=16000)
     librosa.output.write_wav("./Results/output.wav", final_wav, sr=10000)
