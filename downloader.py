@@ -252,7 +252,7 @@ if __name__ == "__main__":
 
             #extract it
             with zipfile.ZipFile(sub_path_zip, 'r') as zip_src:
-                print(zip_src.namelist())
+                # print(zip_src.namelist())
                 for file in zip_src.namelist():
                     if file.startswith("0dB/"):
                         file_pth = file.strip('0dB/')                    
