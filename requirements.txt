@@ -6,5 +6,3 @@ sounddevice
 numba==0.48
 requests
 tqdm
-zipfile
-multiprocessing
