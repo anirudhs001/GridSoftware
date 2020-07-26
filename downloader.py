@@ -5,9 +5,9 @@
 #################
 
 import torch
-import torchaudio
-import librosa
-import numpy as np
+# import torchaudio
+# import librosa
+# import numpy as np
 import random
 import os
 import glob
@@ -222,15 +222,14 @@ def mix(speakers_list, noise_smpl, sample_num, outDir, save_wav=False):
 if __name__ == "__main__":
     # #makedir
     if not(os.path.exists(DATA_DIR_RAW)):
-        os.mkdir("./datasets")
-        os.mkdir(DATA_DIR_RAW)
+        os.makedirs(DATA_DIR_RAW, exist_ok=True )
 
     #DOWNLOADS:
     #1) LIBRISPEECH 
-    print("downloading dataset(dev-clean):")
-    torchaudio.datasets.LIBRISPEECH(DATA_DIR_RAW, url='dev-clean', download='True')
-    print("dataset downloaded!")
-    # torchaudio.datasets.LIBRISPEECH(DATA_DIR_RAW, download='True') #bigger dataset not required ig
+    # print("downloading dataset(dev-clean):")
+    # torchaudio.datasets.LIBRISPEECH(DATA_DIR_RAW, url='dev-clean', download='True')
+    # print("dataset downloaded!")
+    # # torchaudio.datasets.LIBRISPEECH(DATA_DIR_RAW, download='True') #bigger dataset not required ig
 
     #2)NOISY 
     #download and unzip
@@ -241,19 +240,24 @@ if __name__ == "__main__":
         sub_path_dest = os.path.join(Noisy_Dir, sub)
 
         if not os.path.exists(sub_path_dest):
+            #makedir if not exists
+            os.makedirs(sub_path_dest, exist_ok=True)
+
+            #download it:
             print(f"Downloading {sub} dataset")
             sub_path_zip = os.path.join(Noisy_Dir, sub+".zip")
-            
-            #download it:
             request = requests.get(Consts.urls_Noisy[sub], allow_redirects=True)
             with open(sub_path_zip, 'wb+') as f:
                 f.write(request.content)
 
-            #makedir if not exists
-            os.makedirs(sub_path_zip, exist_ok=True)
             #extract it
             with zipfile.ZipFile(sub_path_zip, 'r') as zip_src:
-                zip_src.extractall(sub_path_dest)
+                print(zip_src.namelist())
+                for file in zip_src.namelist():
+                    if file.startswith("0dB/"):
+                        file_pth = file.strip('0dB/')                    
+                        # print(f"saving file:{file_pth}")
+                        zip_src.extract(file, os.path.join(sub_path_dest, file_pth))
 
     #3) Flipkart
     #TODO: download flipkart folder from google drive
