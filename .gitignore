@@ -1,4 +1,5 @@
-datasets
+datasets/processed
+datasets/raw/Noisy
 __pycache__
 models
 flipkart_files
