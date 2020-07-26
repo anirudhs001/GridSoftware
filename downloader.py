@@ -242,7 +242,7 @@ if __name__ == "__main__":
 
         if not os.path.exists(sub_path_dest):
             print(f"Downloading {sub} dataset")
-            sub_path_zip = os.path.join(Noisy_Dir, sub, ".zip")
+            sub_path_zip = os.path.join(Noisy_Dir, sub+".zip")
             
             #download it:
             request = requests.get(Consts.urls_Noisy[sub], allow_redirects=True)
