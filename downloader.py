@@ -254,10 +254,13 @@ if __name__ == "__main__":
             with zipfile.ZipFile(sub_path_zip, 'r') as zip_src:
                 # print(zip_src.namelist())
                 for file in zip_src.namelist():
-                    if file.startswith("0dB/"):
-                        file_pth = file.strip('0dB/')                    
+                    if file.endswith(".wav"):
                         # print(f"saving file:{file_pth}")
-                        zip_src.extract(file, os.path.join(sub_path_dest, file_pth))
+                        file_dest = os.path.join(sub_path_dest, file.strip('0dB/'))                    
+                        #write file
+                        with open(file_dest, 'wb+') as f: 
+                            f.write(zip_src.read(file))
+                        
 
     #3) Flipkart
     #TODO: download flipkart folder from google drive
