@@ -9,11 +9,18 @@ import glob
 import sounddevice
 import time
 
-from asteroid.losses import SingleSrcPMSQE
+# import zounds
+# from zounds.learn import PerceptualLoss
 
 import Consts
 import models
 import trainer
+
+#for lr finder
+# from fastai import *
+
+#EXPERIMENTAL STUFF:
+import models_test
 ########################################################
 ##DATASET and DATALOADER:
 
@@ -67,18 +74,17 @@ if __name__ == "__main__":
     data = customDataset()
     data_loader = DataLoader(
         data,
-        batch_size=16,
+        batch_size=8,
         collate_fn=collate_fn,
         shuffle=True,
-        num_workers=0
     )
 
     # testing: WORKS!
     print("dataset size:",data_loader.dataset.__len__())
     inp, targ, dvec = data_loader.dataset.__getitem__(5)
-    print(f"inp size{inp.size}")
-    print(f"targ size{targ.size}")
-    print("dvec size",dvec.size)
+    # print(f"inp size{inp.size}")
+    # print(f"targ size{targ.size}")
+    # print("dvec size",dvec.size)
     # targ_wav = librosa.core.istft(targ)
     # sounddevice.play(targ_wav, samplerate=10000)
     # time.sleep(3)
@@ -86,22 +92,38 @@ if __name__ == "__main__":
     #load models
     device = ("cuda:0" if torch.cuda.is_available() else "cpu")
     embedder = models.Embedder()
-    extractor = models.Extractor()
+    extractor = models_test.Extractor()
 
     #Using PMSQE loss 
-    loss_func = SingleSrcPMSQE(sample_rate=16000) 
-    # loss_func = nn.MSELoss()
+    #sr for scale
+    # samplerate = zounds.SR16000()
+    # scale = zounds.BarkScale(
+    #     frequency_band=zounds.FrequencyBand(1, samplerate.nyquist),
+    #     n_bands=512)
+
+    # perceptual_loss = PerceptualLoss(
+    #     scale,
+    #     samplerate,
+    #     lap=1,
+    #     log_factor=10,
+    #     basis_size=512,
+    #     frequency_weighting=zounds.AWeighting(),
+    #     cosine_similarity=True).to(device)
+    # loss_func = SingleSrcPMSQE(sample_rate=16000) 
+    loss_func = nn.MSELoss()
 
     #Train!
+    extractor_dest = os.path.join(Consts.MODELS_DIR, "extractor_test")
     print("beginning training:")
     trainer.train(
         data_loader,
         loss_func=loss_func,
         device=device,
-        lr=1e-3,
+        lr=1e-2,
         num_epochs=1,
         # extractor_source=os.path.join(Consts.MODELS_DIR, "extractor-21-7"
-        extractor_source=None
+        extractor_source=None,
+        extractor_dest = extractor_dest
     )
       
     print("training done!")
