@@ -5,9 +5,9 @@
 #################
 
 import torch
-# import torchaudio
-# import librosa
-# import numpy as np
+import torchaudio
+import librosa
+import numpy as np
 import random
 import os
 import glob
@@ -226,10 +226,10 @@ if __name__ == "__main__":
 
     #DOWNLOADS:
     #1) LIBRISPEECH 
-    # print("downloading dataset(dev-clean):")
-    # torchaudio.datasets.LIBRISPEECH(DATA_DIR_RAW, url='dev-clean', download='True')
-    # print("dataset downloaded!")
-    # # torchaudio.datasets.LIBRISPEECH(DATA_DIR_RAW, download='True') #bigger dataset not required ig
+    print("downloading dataset(dev-clean):")
+    torchaudio.datasets.LIBRISPEECH(DATA_DIR_RAW, url='dev-clean', download='True')
+    print("dataset downloaded!")
+    # torchaudio.datasets.LIBRISPEECH(DATA_DIR_RAW, download='True') #bigger dataset not required ig
 
     #2)NOISY 
     #download and unzip
