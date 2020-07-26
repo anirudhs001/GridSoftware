@@ -3,3 +3,4 @@ torch
 torchaudio
 librosa==0.7
 sounddevice
+numba==0.48
