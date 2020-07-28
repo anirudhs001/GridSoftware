@@ -34,6 +34,13 @@ Add music too and change number of speakers to 2
 ### 6)Make it run in real time
 - mask short segments at a time 
 
+## Install requirements:
+Run the below command which shall install the required linux packages and python libraries
+```shell
+cd GridSoftware/
+./install-dependencies
+```
+
 ## Steps to Run:
 1) run downloader.py   
 `python3 downloader.py`  
@@ -56,13 +63,3 @@ Test the model!
 
 ## References:
 [voice filter](https://google.github.io/speaker-id/publications/VoiceFilter/)
-
-## Requirements:
-#### Python bindings:
-- torch
-- torchaudio
-- librosa==0.7
-- sounddevice
-
-#### system libraries
-- sudo apt-get install libportaudio2
