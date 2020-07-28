@@ -51,7 +51,7 @@ class customDataset(Dataset):
 def collate_fn(batch):
     targets_list = list()
     mixed_list = list()
-    dvec_list = list() # unequally length, can't stack
+    dvec_list = list() # unequal length, can't stack
 
     for inp, targ, dvec_mel in batch:
         #add spectrograms to list
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     data = customDataset()
     data_loader = DataLoader(
         data,
-        batch_size=8,
+        batch_size=Consts.batch_size,
         collate_fn=collate_fn,
         shuffle=True,
     )
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     #load models
     device = ("cuda:0" if torch.cuda.is_available() else "cpu")
     embedder = models.Embedder()
-    extractor = models_test.Extractor()
+    extractor = models_test.Extractor() #testing new extractor
 
     #Using PMSQE loss 
     #sr for scale
@@ -113,13 +113,13 @@ if __name__ == "__main__":
     loss_func = nn.MSELoss()
 
     #Train!
-    extractor_dest = os.path.join(Consts.MODELS_DIR, "extractor_test")
+    extractor_dest = os.path.join(Consts.MODELS_DIR, "extractor_new")
     print("beginning training:")
     trainer.train(
         data_loader,
         loss_func=loss_func,
         device=device,
-        lr=1e-2,
+        lr=1e-3,
         num_epochs=1,
         # extractor_source=os.path.join(Consts.MODELS_DIR, "extractor-21-7"
         extractor_source=None,
