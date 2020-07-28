@@ -66,3 +66,4 @@ Test the model!
 
 #### system libraries
 - sudo apt-get install libportaudio2
+- sudo apt-get install ffmpeg
