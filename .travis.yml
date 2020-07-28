@@ -22,8 +22,8 @@ install:
 script:
   - python3 downloader.py
   - ls
-  - python3 main.py
-  - python3 test.py
+  # - python3 main.py
+  # - python3 test.py
 
 after_success:
   coveralls
