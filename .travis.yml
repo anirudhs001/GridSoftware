@@ -11,8 +11,10 @@ branches:
 
 install:
   - ./install_dependencies
+  - pip install -r requirements.txt
 
 script:
+  - ./run-qa-checks
   - python3 downloader.py
   - ls
   # - python3 main.py
