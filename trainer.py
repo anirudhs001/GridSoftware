@@ -54,7 +54,7 @@ def train(
     if extractor_source is not None:
         chkpt_list = sorted(glob.glob(os.path.join(extractor_source, "*.pt")))
         if len( chkpt_list ):
-            chkpt = chkpt_list[-2]
+            chkpt = chkpt_list[-2] #TODO: sorted does not work. need to change this
             extractor.load_state_dict(torch.load(chkpt, map_location=device))
             print(f"Loaded extractor: {chkpt}.")
     extractor.train()
@@ -78,7 +78,7 @@ def train(
 
     #training loop
     for n in range(num_epochs):
-        for batch_id, batch in tqdm(enumerate(dataloader), desc="Batch"):
+        for batch_id, batch in tqdm(enumerate( dataloader ), desc="Batch"):
 
             (mixed_mag, target_mag, dvec_mel) = batch
             mixed_mag = mixed_mag.to(device)

@@ -26,7 +26,7 @@ from tqdm import tqdm
 DATA_DIR_RAW = "./datasets/raw/"
 DATA_DIR_PROCESSED = "./datasets/processed"
 SAMPLING_RATE = Consts.SAMPLING_RATE 
-DATASET_SIZE = 10 #TODO: change this
+DATASET_SIZE = Consts.dataset_size
 NUM_SPEAKERS = 2
 BATCH_SIZE = min(cpu_count() * 125, DATASET_SIZE) 
 a = 0.5 #ratio of librispeech data in the prepared dataset
@@ -117,18 +117,29 @@ def mix(speakers_list, noise_smpl, sample_num, outDir, save_wav=False):
         return arr
 
     #converts an input wav into (signal, phase) pair. stft the input along the way
-    #shamelessly borrowed from seungwonpark's repo
     def wavTOspec(y, sr,n_fft):
 
+        #fourier transform to get the magnitude of indivudual frequencies
         y = librosa.core.stft(
             y, 
             n_fft=n_fft,
             hop_length=Consts.hoplength,
             win_length=Consts.winlength
         )
-        S = 20.0 * np.log10(np.maximum(1e-5, np.abs(y))) - 20.0
-        S, D = np.clip(S / 100, -1.0, 0) + 1.0, np.angle(y)
+
+        #get amplitude and angle different samplepoints. from librosa docs
+        S = np.abs(y)
+        D = np.angle(y)
+
+        #amp to db
+        S = 20.0 * np.log10(np.maximum(1e-5, S)) - 20.0
+        
+        #normlise S
+        S = np.clip(S / 100, -1.0, 0) + 1.0
+
+        #change shape for 
         S, D = S.T, D.T
+
         return S, D
 
     outpath = os.path.join(outDir, "sample-"+str(sample_num))
@@ -195,16 +206,21 @@ def mix(speakers_list, noise_smpl, sample_num, outDir, save_wav=False):
         Consts.SAMPLING_RATE,
         n_fft=Consts.normal_nfft
     )
+
+    #convert dvec to melspectrogram
+    #do FT
     target_dvec  = librosa.stft(
         target_dvec, 
         n_fft=Consts.dvec_nfft,
         hop_length=Consts.hoplength,
-        win_length=Consts.winlength
+        win_length=Consts.winlength,
+        window='hann'
     )
-
-    #convert dvec spectrogram to melspectrogram
+    #mag = amp ** 2
     mag = np.abs(target_dvec) ** 2
+    #filter to get melspectrogram after FT. number of mel bands = n_mels
     fltr = librosa.filters.mel(sr=SAMPLING_RATE, n_fft=Consts.dvec_nfft, n_mels=40)
+    #apply filter and get in dB
     target_dvec = np.log10(np.dot(fltr, mag) + 1e-6)
     
     #save to files
