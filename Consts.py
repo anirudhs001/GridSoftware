@@ -18,3 +18,6 @@ normal_nfft = 1200
 hoplength = 160
 winlength= 400
 dvec_nfft = 512
+
+#training parameters
+batch_size = 8 #TODO: change this if running on bigger GPU
