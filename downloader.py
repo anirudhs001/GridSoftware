@@ -26,7 +26,7 @@ from tqdm import tqdm
 DATA_DIR_RAW = "./datasets/raw/"
 DATA_DIR_PROCESSED = "./datasets/processed"
 SAMPLING_RATE = Consts.SAMPLING_RATE 
-DATASET_SIZE = 10000 #TODO: change this
+DATASET_SIZE = Consts.dataset_size
 NUM_SPEAKERS = 2
 BATCH_SIZE = min(cpu_count() * 125, DATASET_SIZE) 
 a = 0.5 #ratio of librispeech data in the prepared dataset

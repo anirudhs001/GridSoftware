@@ -19,5 +19,7 @@ hoplength = 160
 winlength= 400
 dvec_nfft = 512
 
+#dataset setup parameters
+dataset_size = 10 #TODO: change this if training. keep this small if testing code
 #training parameters
 batch_size = 8 #TODO: change this if running on bigger GPU
