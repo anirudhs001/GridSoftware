@@ -26,7 +26,7 @@ from tqdm import tqdm
 DATA_DIR_RAW = "./datasets/raw/"
 DATA_DIR_PROCESSED = "./datasets/processed"
 SAMPLING_RATE = Consts.SAMPLING_RATE 
-DATASET_SIZE = 10000 #TODO: change this
+DATASET_SIZE = 10 #TODO: change this
 NUM_SPEAKERS = 2
 BATCH_SIZE = min(cpu_count() * 125, DATASET_SIZE) 
 a = 0.5 #ratio of librispeech data in the prepared dataset
@@ -244,7 +244,8 @@ if __name__ == "__main__":
             os.makedirs(sub_path_dest, exist_ok=True)
 
             #download it:
-            print(f"Downloading {sub} dataset")
+            # print(f"Downloading {sub} dataset") #f-strings not supported til python3.6
+            print("Downloading %s dataset"%sub)
             sub_path_zip = os.path.join(Noisy_Dir, sub+".zip")
             request = requests.get(Consts.urls_Noisy[sub], allow_redirects=True)
             with open(sub_path_zip, 'wb+') as f:
@@ -272,6 +273,7 @@ if __name__ == "__main__":
     if not os.path.exists(DATA_DIR_PROCESSED):
         os.mkdir(DATA_DIR_PROCESSED)
     print("preparing data...")
-    print(f"Available number of cpu cores:{cpu_count()}")
+    # print(f"Available number of cpu cores:{cpu_count()}") #python3.6
+    print("Available number of cpu cores:%d"%cpu_count())
     prep_data(n=DATASET_SIZE, num_spkrs=2, save_wav=True) #TODO:change save_wav!
     print("datset preparation done!")
