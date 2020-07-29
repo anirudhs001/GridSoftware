@@ -69,16 +69,17 @@ if __name__ == "__main__":
     embedder.load_state_dict(torch.load(embedder_pth, map_location=torch.device("cpu")))    
     embedder.eval()
     
-    extractor_pth = os.path.join(Consts.MODELS_DIR, "extractor-25-7-0/extractor_epoch-0_batch-400.pt")
-    extractor = torch.nn.DataParallel(extractor)
+    extractor_pth = os.path.join(Consts.MODELS_DIR, "extractor_new/extractor-28-7-20/extractor_final_29-7-3.pt")
+    # extractor = torch.nn.DataParallel(extractor)
     extractor.load_state_dict(torch.load(extractor_pth, map_location=torch.device("cpu")))
     extractor.eval()
 
 
     #load input file
     inp_path = glob.glob(os.path.join( Consts.DATA_DIR, "**/mixed.wav"))
-    inp_path = inp_path[0]
-    print(f"loading: {inp_path}")
+    inp_path = inp_path[3]
+    # print(f"loading: {inp_path}")
+    print("loading: %s"%inp_path)
     mixed_wav, _ = librosa.load(inp_path,sr=Consts.SAMPLING_RATE)
     mixed_mag, phase = wavTOspec(mixed_wav, sr=Consts.SAMPLING_RATE, n_fft=1200) 
     mixed_mag = torch.from_numpy(mixed_mag)
@@ -88,7 +89,7 @@ if __name__ == "__main__":
 
     #load target
     targ_path = glob.glob(os.path.join(Consts.DATA_DIR, "**/target.wav"))
-    targ_path = targ_path[0]
+    targ_path = targ_path[3]
     targ_wav, _ = librosa.load(targ_path, sr=Consts.SAMPLING_RATE)
     print("playing target audio")
     # sounddevice.play(targ_wav, samplerate=16000)
@@ -96,7 +97,7 @@ if __name__ == "__main__":
 
     #load dvec file
     dvec_path = glob.glob(os.path.join(Consts.DATA_DIR, "**/dvec.pt"))
-    dvec_path = dvec_path[0]
+    dvec_path = dvec_path[3]
     dvec_mel = torch.load(dvec_path, map_location="cpu")
     dvec_mel = torch.from_numpy(dvec_mel)
 
@@ -106,7 +107,8 @@ if __name__ == "__main__":
     dvec = dvec.unsqueeze(0)
     mixed_mag = mixed_mag.unsqueeze(0) 
     #get mask
-    print(f"dvec size:{dvec.shape}, mixed_mag size:{mixed_mag.shape}")
+    # print(f"dvec size:{dvec.shape}, mixed_mag size:{mixed_mag.shape}")
+    print("dvec size:", dvec.shape, "mixed_mag size:", mixed_mag.shape)
     mask = extractor(mixed_mag, dvec)
     output = mixed_mag*mask
     output = output[0].detach().numpy()

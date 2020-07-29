@@ -91,6 +91,7 @@ if __name__ == "__main__":
     
     #load models
     device = ("cuda:0" if torch.cuda.is_available() else "cpu")
+    print("training on :%s"%device)
     embedder = models.Embedder()
     extractor = models_test.Extractor() #testing new extractor
 
@@ -119,8 +120,8 @@ if __name__ == "__main__":
         data_loader,
         loss_func=loss_func,
         device=device,
-        lr=1e-3,
-        num_epochs=1,
+        lr=3e-3,
+        num_epochs=2,
         # extractor_source=os.path.join(Consts.MODELS_DIR, "extractor-21-7"
         extractor_source=None,
         extractor_dest = extractor_dest

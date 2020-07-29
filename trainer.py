@@ -30,19 +30,21 @@ def train(
         print("downloading pretrained embedder...")
         #save it:
         request = requests.get(Consts.url_embedder, allow_redirects=True)
-        with open(embedder_pth, 'wb') as f:
+        with open(embedder_pth, 'wb+') as f:
             f.write(request.content)
     embedder.load_state_dict(torch.load(embedder_pth, map_location=device))
     print("embedder loaded!")
     #embedder in eval mode
-    embedder.to(device)
+    # embedder.to(device)
     embedder.eval()
     
     #Extractor
     extractor = models.Extractor()
     if device == "cuda:0":
         #put model on gpu
-        extractor = torch.nn.DataParallel(extractor, device_ids=device) 
+        # device_ids = [i for i in range(torch.cuda.device_count())]
+        # extractor = torch.nn.DataParallel(extractor, device_ids=device_ids) 
+        extractor = extractor.to(device)
     elif device == "cpu":
         # TRAIN WITH MULTIPLE CPUS!
         extractor = torch.nn.DataParallel(extractor, device_ids=None) 
@@ -56,7 +58,9 @@ def train(
         if len( chkpt_list ):
             chkpt = chkpt_list[-2] #TODO: sorted does not work. need to change this
             extractor.load_state_dict(torch.load(chkpt, map_location=device))
-            print(f"Loaded extractor: {chkpt}.")
+            # print(f"Loaded extractor: {chkpt}.")
+            print("Loaded extractor:%s."%chkpt) #for python3.5
+
     extractor.train()
 
     #optimizer and loss func
@@ -69,12 +73,15 @@ def train(
     # loss_list = list() # list to hold losses after each step_size number of batches
 
     #extractor_pth to store checkpoints
-    time_stamp = str(f"-{time.localtime().tm_mday}-{time.localtime().tm_mon}-{time.localtime().tm_hour}")
-    extractor_dest = os.path.join(extractor_dest, f"extractor{time_stamp}")
+    # time_stamp = str(f"-{time.localtime().tm_mday}-{time.localtime().tm_mon}-{time.localtime().tm_hour}")
+    time_stamp = str("-%d-%d-%d"%(time.localtime().tm_mday, time.localtime().tm_mon, time.localtime().tm_hour))
+    # extractor_dest = os.path.join(extractor_dest, f"extractor{time_stamp}")
+    extractor_dest = os.path.join(extractor_dest, "extractor%s"%time_stamp)
     if not os.path.exists(extractor_dest):
         os.makedirs(extractor_dest, exist_ok=True)
     #sanity check
-    print(f"saving checkpoints at: {extractor_dest}")
+    # print(f"saving checkpoints at: {extractor_dest}")
+    print("saving checkpoints at: %s"%extractor_dest)
 
     #training loop
     for n in range(num_epochs):
@@ -88,18 +95,19 @@ def train(
             #get embeddings of all dvecs in batch
             dvec_list = list()
             for dvec in dvec_mel:  
-                dvec = dvec.to(device)
+                # dvec = dvec.to(device)
                 emb = embedder(dvec)
                 dvec_list.append(emb)
             
-            dvec_mel = torch.stack(dvec_list, dim=0).to(device)
+            dvec = torch.stack(dvec_list, dim=0)
             #no gradients for dvec
-            dvec_mel.detach()
+            dvec.detach()
+            dvec = dvec.to(device)
 
             #TRAIN EXTRACTOR
             
             #1) predict output
-            mask = extractor(mixed_mag, dvec_mel)
+            mask = extractor(mixed_mag, dvec)
             output = (mask * mixed_mag).to(device)
 
             #2) loss
@@ -122,17 +130,21 @@ def train(
 
             
             ##LOGGING and CHECKPOINTING:
-            print(f"loss: {loss.item()}")
+            # print(f"loss: {loss.item()}")
+            print("loss: %f"%loss.item())
             if batch_id % step_size == 0 :
                 # loss_list.append(loss.item())
                 #save checkpoint
-                chkpt_path = os.path.join(extractor_dest, f"extractor_epoch-{n}_batch-{batch_id}.pt")
+                # chkpt_path = os.path.join(extractor_dest, f"extractor_epoch-{n}_batch-{batch_id}.pt")
+                chkpt_path = os.path.join(extractor_dest, "extractor_epoch-%d_batch-%d.pt"%(n, batch_id))
                 torch.save(extractor.state_dict(), chkpt_path)
                 print("checkpoint created!")
 
     #save the final version
     print("final loss: ", loss.item())
-    time_stamp = str(f"{time.localtime().tm_mday}-{time.localtime().tm_mon}-{time.localtime().tm_hour}")
-    chkpt_path = os.path.join(extractor_dest, f"extractor_final_{time_stamp}.pt")
+    # time_stamp = str(f"{time.localtime().tm_mday}-{time.localtime().tm_mon}-{time.localtime().tm_hour}")
+    time_stamp = str("%d-%d-%d"%(time.localtime().tm_mday,time.localtime().tm_mon,time.localtime().tm_hour))
+    # chkpt_path = os.path.join(extractor_dest, f"extractor_final_{time_stamp}.pt")
+    chkpt_path = os.path.join(extractor_dest, "extractor_final_%s.pt"%time_stamp)
     torch.save(extractor.state_dict(), chkpt_path)
     print("model saved!")
