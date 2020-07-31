@@ -9,7 +9,7 @@ from torch import nn
 import torch.nn.functional as F
 
 ############
-#Extractor (Simple)
+#Extractor 
 ############
 class Extractor(nn.Module):
   def __init__(self):
