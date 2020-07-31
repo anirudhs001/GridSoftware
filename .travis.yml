@@ -5,16 +5,21 @@ cache: pip3
 python:
   - "3.8"
 
+addons:
+  apt:
+    packages:
+      - libportaudio2
+      - libsndfile1-dev
+      - ffmpeg
+
 branches:
   only:
     - master
 
 install:
-  - ./install_dependencies
-  - pip install -r requirements-test.txt
+  - pip install -r requirements.txt
 
 script:
-  - ./run-qa-checks
   - python3 downloader.py
   - ls
   # - python3 main.py
