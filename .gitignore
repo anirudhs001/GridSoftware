@@ -4,6 +4,5 @@ datasets/raw/LibriSpeech
 datasets/raw/dev-clean.tar.gz
 __pycache__
 .vscode
-models
 flipkart_files
 flipkart_files.zip
