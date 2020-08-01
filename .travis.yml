@@ -14,8 +14,8 @@ addons:
 
 branches:
   only:
-    - live-audio
     - master
+    - live-audio
 
 install:
   - pip install -r requirements.txt

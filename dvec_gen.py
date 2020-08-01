@@ -42,15 +42,15 @@ if __name__ == "__main__":
             # sanity check
             print(f"starting category:{key}")
             for spkr in tqdm(val):
-                
+
                 # load file
                 inp, _ = librosa.load(spkr, sr=Consts.SAMPLING_RATE)
                 # trim silence
                 inp, _ = librosa.effects.trim(inp, top_db=20)
-                #make dvec the right size
+                # make dvec the right size
                 L = 3 * Consts.SAMPLING_RATE
                 inp = shorten_file(inp, L)
-                #get mel spectrogram for dvec
+                # get mel spectrogram for dvec
                 inp = wavTOmel(inp)
                 inp = torch.from_numpy(inp)
                 # run embedder

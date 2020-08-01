@@ -1,13 +1,12 @@
-
 import numpy as np
 import librosa
 import Consts
 
-#TODO: get this
-#mag and phase are numpy arrays which contain the stft'ed audio's magnitude and
+# TODO: get this
+# mag and phase are numpy arrays which contain the stft'ed audio's magnitude and
 # phase info respectively.
-#returns: a numpy array of audio file.
-#NOTE: steps here should be opposite of as done in wavTOspec, i.e. first
+# returns: a numpy array of audio file.
+# NOTE: steps here should be opposite of as done in wavTOspec, i.e. first
 # denormalise then db to amp
 def specTOwav(mag, phase):
     print(mag.shape, phase.shape)
@@ -43,6 +42,7 @@ def wavTOspec(y, sr, n_fft):
     S, D = S.T, D.T
     return S, D
 
+
 def wavTOmel(y):
     # convert dvec to melspectrogram
     # do FT
@@ -56,12 +56,15 @@ def wavTOmel(y):
     # mag = amp ** 2
     mag = np.abs(y) ** 2
     # filter to get melspectrogram after FT. number of mel bands = n_mels
-    fltr = librosa.filters.mel(sr=Consts.SAMPLING_RATE, n_fft=Consts.dvec_nfft, n_mels=40)
+    fltr = librosa.filters.mel(
+        sr=Consts.SAMPLING_RATE, n_fft=Consts.dvec_nfft, n_mels=40
+    )
     # apply filter and get in dB
     y = np.log10(np.dot(fltr, mag) + 1e-6)
     return y
 
-#shortens a numpy array(arr) to length L.
+
+# shortens a numpy array(arr) to length L.
 # appends zeros if file shorter than L
 def shorten_file(arr, L):
     if len(arr) < L:
