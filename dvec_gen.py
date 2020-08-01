@@ -59,9 +59,10 @@ if __name__ == "__main__":
 
             dvec_avg = dvec_avg / len(val)
             # save dvec
-            with open(os.path.join("./datasets/dvecs/dvev/", f"class-{key}.pt"), "wb+") as f:
-                torch.save(dvec_avg, f)
-
+            if not os.path.exists(Consts.DVEC_SRC):
+                os.makedirs(Consts.DVEC_SRC)
+            path = os.path.join(Consts.DVEC_SRC, f"class-{key}.pt")
+            torch.save(dvec_avg, path)
             print(f"{key} done")
 
     print("dvec generation done!")
