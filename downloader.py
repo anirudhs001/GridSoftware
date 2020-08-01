@@ -306,5 +306,5 @@ if __name__ == "__main__":
         os.mkdir(DATA_DIR_PROCESSED)
     print("preparing data...")
     print(f"Available number of cpu cores:{cpu_count()}")
-    prep_data(n=DATASET_SIZE, num_spkrs=2, save_wav=True)  # TODO:change save_wav!
+    prep_data(n=DATASET_SIZE, num_spkrs=2, save_wav=True)  # TODO:keep save_wav True!
     print("datset preparation done!")
