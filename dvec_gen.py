@@ -2,9 +2,10 @@ import torch
 import librosa
 import os
 import glob
-
+from tqdm import tqdm
 import Consts
 import models
+from utils import specTOwav, wavTOspec, wavTOmel, shorten_file
 
 if __name__ == "__main__":
 
@@ -22,7 +23,7 @@ if __name__ == "__main__":
     }
 
     # sanity check
-    # print(male_spkr)
+    # print(Male_spkr)
 
     # load embedder:
     print("loading embedder")
@@ -34,24 +35,33 @@ if __name__ == "__main__":
     print("embedder loaded")
 
     print("starting dvec generation:")
-    for i, spkr_class in enumerate(spkr_list):
+    for key, val in spkr_dict.items():
         with torch.no_grad():
 
-            dvec_avg = torch.zeros(size=(256))
-            for spkr in spkr_class:
+            dvec_avg = torch.zeros(size=(256,))
+            # sanity check
+            print(f"starting category:{key}")
+            for spkr in tqdm(val):
+                
                 # load file
                 inp, _ = librosa.load(spkr, sr=Consts.SAMPLING_RATE)
                 # trim silence
                 inp, _ = librosa.effects.trim(inp, top_db=20)
+                #make dvec the right size
+                L = 3 * Consts.SAMPLING_RATE
+                inp = shorten_file(inp, L)
+                #get mel spectrogram for dvec
+                inp = wavTOmel(inp)
+                inp = torch.from_numpy(inp)
                 # run embedder
                 dvec = embedder(inp)
                 dvec_avg += dvec
 
-            dvec_avg = dvec_avg / len(spkr_class)
+            dvec_avg = dvec_avg / len(val)
             # save dvec
-            with open(f"./datasets/dvecs/dvev/class-{i}.pt", "wb+") as f:
+            with open(os.path.join("./datasets/dvecs/dvev/", f"class-{key}.pt"), "wb+") as f:
                 torch.save(dvec_avg, f)
 
-            print(f"{i+1}/{len(spkr_list)} done")
+            print(f"{key} done")
 
     print("dvec generation done!")
