@@ -42,13 +42,17 @@ We decided to train on Azure. It provides great hardware(Intel Xeon CPU, Tesla t
 
 ### 6) Make it run in real time
 We have to do the following things here:
- - [ ] optimize the current code.  
-    Our motive here is to make the existing pipeline as fast as possible. We can start of with : 
+ - [ ] (LEVEL 1) optimize the current code.  
+   Our motive here is to make the existing pipeline as fast as possible. We can start of with : 
     - Changing librosa with [essentia](https://essentia.upf.edu/) (written in C)
     - Using pytorch's built-in features to speed up inference. This [article](https://www.tarasmatsyk.com/posts/4-how-to-pytorch-in-production/) talks about how to do just that.
     
- - [ ] Feeding live data to the model, and get back continuous data.  
-    This needs to be thought on. A simple approach would be to segment the audio stream, concatenate it on some of the previous segments, and then pass it to the model. this way we would be able to use the existing models.
+ - [ ] (LEVEL 1) Make it work without a sample dvec
+   We try different dvecs on the starting segment of the sample audio, and get the loudest speaker out. 
+
+ - [ ] (LEVEL 3) Feeding live data to the model, and get back continuous data.  
+   This needs to be thought on. A simple approach would be to segment the audio stream, concatenate it on some of the previous segments, and then pass it to the model. this way we would be able to use the existing models.
+ 
 
 ### 7) Setup an API
 (details not announced by flipkart yet.)
