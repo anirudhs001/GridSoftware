@@ -59,7 +59,14 @@ def dvec_routine(
 
 
 def train(
-    dataloader, loss_func, device, lr, num_epochs, extractor_source, extractor_dest
+    dataloader,
+    loss_func,
+    device,
+    lr,
+    num_epochs,
+    extractor_source,
+    extractor_dest,
+    p=0.9,
 ):
 
     # load pretrained embedder
@@ -144,7 +151,7 @@ def train(
                 loss_func,
                 extractor,
                 embedder,
-                p=0.9,
+                p=p,
             )
             # get embeddings of all dvecs in batch
             # dvec_list = list()
