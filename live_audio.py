@@ -1,4 +1,3 @@
-
 #################
 #      WIP      #
 #################
@@ -134,5 +133,3 @@ if __name__ == "__main__":
 
     mixed_wav = librosa.load(inp_path, sr=Consts.SAMPLING_RATE)
     dvec_wav = librosa.load(dvec_path, sr=Consts.SAMPLING_RATE)
-
-
