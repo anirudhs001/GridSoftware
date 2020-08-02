@@ -95,16 +95,9 @@ if __name__ == "__main__":
     # targ_wav = librosa.core.istft(targ)
     # sounddevice.play(targ_wav, samplerate=10000)
     # time.sleep(3)
-<<<<<<< HEAD
-    
-    #load models
-    device = ("cuda:0" if torch.cuda.is_available() else "cpu")
-    print("training on :%s"%device)
-=======
 
     # load models
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
->>>>>>> f187841f4338f15ab24bc4239a13ebffbc3d5f68
     embedder = models.Embedder()
     extractor = models_test.Extractor()  # testing new extractor
 

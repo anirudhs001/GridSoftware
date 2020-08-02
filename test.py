@@ -64,14 +64,6 @@ if __name__ == "__main__":
     embedder_pth = os.path.join(Consts.MODELS_DIR, "embedder.pt")
     embedder.load_state_dict(torch.load(embedder_pth, map_location=torch.device("cpu")))
     embedder.eval()
-<<<<<<< HEAD
-    
-    extractor_pth = os.path.join(Consts.MODELS_DIR, "extractor_new/extractor-28-7-20/extractor_final_29-7-3.pt")
-    # extractor = torch.nn.DataParallel(extractor)
-    extractor.load_state_dict(torch.load(extractor_pth, map_location=torch.device("cpu")))
-    extractor.eval()
-=======
->>>>>>> f187841f4338f15ab24bc4239a13ebffbc3d5f68
 
     extractor_pth = os.path.join(
         Consts.MODELS_DIR, "extractor_new/extractor-28-7-20/extractor_final_29-7-3.pt"
@@ -82,16 +74,6 @@ if __name__ == "__main__":
     )
     extractor.eval()
 
-<<<<<<< HEAD
-    #load input file
-    inp_path = glob.glob(os.path.join( Consts.DATA_DIR, "**/mixed.wav"))
-    inp_path = inp_path[3]
-    # print(f"loading: {inp_path}")
-    print("loading: %s"%inp_path)
-    mixed_wav, _ = librosa.load(inp_path,sr=Consts.SAMPLING_RATE)
-    mixed_mag, phase = wavTOspec(mixed_wav, sr=Consts.SAMPLING_RATE, n_fft=1200) 
-    mixed_mag = torch.from_numpy(mixed_mag)
-=======
     # load input file
     inp_path = glob.glob(os.path.join(Consts.DATA_DIR, "**/mixed.wav"))
     inp_path = inp_path[0]
@@ -99,7 +81,6 @@ if __name__ == "__main__":
     mixed_wav, _ = librosa.load(inp_path, sr=Consts.SAMPLING_RATE)
     mixed_mag, phase = wavTOspec(mixed_wav, sr=Consts.SAMPLING_RATE, n_fft=1200)
     mixed_mag = torch.from_numpy(mixed_mag).detach()
->>>>>>> f187841f4338f15ab24bc4239a13ebffbc3d5f68
     print("playing mixed audio")
     # sounddevice.play(mixed_wav, samplerate=16000)
     # time.sleep(3)
@@ -122,17 +103,10 @@ if __name__ == "__main__":
     dvec = embedder(dvec_mel)
     # make batches of dvec and mixed
     dvec = dvec.unsqueeze(0)
-<<<<<<< HEAD
-    mixed_mag = mixed_mag.unsqueeze(0) 
-    #get mask
-    # print(f"dvec size:{dvec.shape}, mixed_mag size:{mixed_mag.shape}")
-    print("dvec size:", dvec.shape, "mixed_mag size:", mixed_mag.shape)
-=======
     mixed_mag = mixed_mag.unsqueeze(0)
     # get mask
     print(f"dvec size:{dvec.shape}, mixed_mag size:{mixed_mag.shape}")
     print("running extractor")
->>>>>>> f187841f4338f15ab24bc4239a13ebffbc3d5f68
     mask = extractor(mixed_mag, dvec)
     print("extractor done")
 
