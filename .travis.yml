@@ -5,24 +5,20 @@ cache: pip3
 python:
   - "3.8"
 
-addons:
-  apt:
-    packages:
-      - libportaudio2
-      - libsndfile1-dev
-      - ffmpeg
-
 branches:
   only:
     - master
+    - live_audio
 
 install:
+  - ./install_dependencies
   - pip install -r requirements.txt
 
 script:
   - python3 downloader.py
   - ls
-  # - python3 main.py
+  # - python3 dvec_gen.py
+  - python3 main.py
   # - python3 test.py
 
 after_success:
