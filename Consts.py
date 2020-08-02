@@ -10,6 +10,7 @@ url_Flipkart = "https://drive.google.com/drive/folders/1FJ6lkvJihscFfXslVJyhXIob
 url_embedder = "https://drive.google.com/u/0/uc?id=1YFmhmUok-W76JkrfA0fzQt3c-ZsfiwfL&export=download"
 
 DATA_DIR = os.path.join("./datasets/processed", "size=10")
+DATA_DIR_RAW = "./datasets/raw"
 DVEC_SRC = "./datasets/dvec"
 MODELS_DIR = "./models/"
 

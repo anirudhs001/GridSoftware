@@ -10,9 +10,52 @@ import Consts
 import models
 
 import time
+import random  # for tossing
 
 # progress bar
 from tqdm import tqdm
+
+
+# dvec_routine returns the same dvec with a probability p. Otherwise, it returns a batch of dvecs,
+# which MINIMISES the LOSS for each noisy sample in the batch.
+def dvec_routine(
+    dvec_mel, dvec_samples, noisy, target, loss_func, extractor, embedder, p=0.9
+):
+
+    x = random.choice(range(1, 101))
+    if x <= 100 * p:
+        # get embeddings of all dvecs in batch
+        dvec_list = list()
+        for dvec in dvec_mel:
+            dvec = dvec.to(device)
+            emb = embedder(dvec)
+            dvec_list.append(emb)
+        return dvec_list  # return just the dvecs
+
+    else:
+        with torch.no_grad():  # no gradient for any of the computations
+            bs = Consts.batch_size
+            for i, dvec_s in enumerate(dvec_samples):
+                dvec_samples[i] = dvec_s.repeat(
+                    bs, 1
+                )  # copy dvec for each sample in batch
+
+            # sanity check
+            print(dvec_samples.shape)
+            out = list()
+            losses = torch.zeros(shape=(dvec_samples.shape[0], bs))
+            for i in range(dvec_samples.shape[0]):
+                mask = extractor(noisy, dvec_samples[i])
+                out.append(mask * noisy)
+                for j, o, t in enumerate(zip(out, target)):
+                    losses[i, j] = loss_func(o, t)
+            losses = torch.transpose(losses, 0, 1)
+            _, indices = torch.min(losses)
+
+            for i in enumerate(dvec_mel):
+                dvec_mel[i] = dvec_samples[indices[i], 0]
+
+        return dvec_mel
 
 
 def train(
@@ -55,6 +98,15 @@ def train(
             print(f"Loaded extractor: {chkpt}.")
     extractor.train()
 
+    # load sample dvecs
+    if os.path.exists(Consts.DVEC_SRC):
+        dvec_samples_pth = glob.glob(os.path.join(Consts.DVEC_SRC, "*.pt"))
+        dvec_samples = list()  # stored in a list
+        for pth in dvec_samples_pth:
+            dvec_samples.append(torch.load(pth, map_location=device))
+    # sanity check
+    print(f"No of dvec samples founf: {dvec_samples.len}")
+
     # optimizer and loss func
     optimizer = optim.Adam(extractor.parameters(), lr=lr)
     loss_func = loss_func
@@ -83,14 +135,25 @@ def train(
             target_mag = target_mag.to(device)
             # dvec_mel = dvec_mel.to(device)
 
+            # run side routine and drop the dvec periodically
+            dvec_mel = dvec_routine(
+                dvec_mel,
+                dvec_samples,
+                mixed_mag,
+                target_mag,
+                loss_func,
+                extractor,
+                embedder,
+                p=0.9,
+            )
             # get embeddings of all dvecs in batch
-            dvec_list = list()
-            for dvec in dvec_mel:
-                dvec = dvec.to(device)
-                emb = embedder(dvec)
-                dvec_list.append(emb)
+            # dvec_list = list()
+            # for dvec in dvec_mel:
+            #     dvec = dvec.to(device)
+            #     emb = embedder(dvec)
+            #     dvec_list.append(emb)
 
-            dvec_mel = torch.stack(dvec_list, dim=0).to(device)
+            dvec_mel = torch.stack(dvec_mel, dim=0).to(device)
             # no gradients for dvec
             dvec_mel.detach()
 
