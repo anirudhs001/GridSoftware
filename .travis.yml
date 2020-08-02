@@ -8,6 +8,7 @@ python:
 branches:
   only:
     - master
+    - live_audio
 
 install:
   - ./install_dependencies
