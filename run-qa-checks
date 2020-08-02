@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+flake8 && echo "SUCCESS: Flake8 check successful!" \
+|| { echo "ERROR: Flake8 check failed!"; FAILURE=1; }
+
+isort *.py --check-only --profile black --diff \
+&& echo "SUCCESS: Isort check successful!" \
+|| { echo "ERROR: Isort check failed! Hint: did you forget running 'black -S .'?"; FAILURE=1; }
+
+black -S --check --diff . \
+&& echo "SUCCESS: Black check successful!" \
+|| { echo "ERROR: Black check failed! Hint: did you forget running 'black -S .'?"; FAILURE=1; }
+
+exit $FAILURE
