@@ -16,9 +16,10 @@ import random  # for tossing
 from tqdm import tqdm
 
 
-
 def train(
     dataloader,
+    embedder,
+    extractor,
     loss_func,
     device,
     lr,
@@ -29,7 +30,6 @@ def train(
 ):
 
     # load pretrained embedder
-    embedder = models.Embedder()
     embedder_pth = os.path.join(Consts.MODELS_DIR, "embedder.pt")
     if not os.path.exists(embedder_pth):
         print("downloading pretrained embedder...")
@@ -44,7 +44,6 @@ def train(
     embedder.eval()
 
     # Extractor
-    extractor = models.Extractor()
     if device == "cuda:0":
         #put model on gpu
         # device_ids = [i for i in range(torch.cuda.device_count())]

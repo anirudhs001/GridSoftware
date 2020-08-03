@@ -125,6 +125,8 @@ if __name__ == "__main__":
     print("beginning training:")
     trainer.train(
         data_loader,
+        embedder,
+        extractor,
         loss_func=loss_func,
         device=device,
         lr=3e-3,
