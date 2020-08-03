@@ -134,13 +134,13 @@ def train(
                     #sanity check
                     # print(losses[1,4]) 
                     for i in range(len(dvec_samples)):
-                        mask = extractor(noisy, dvec_samples[i]).to(device)
-                        out = (mask * noisy).to(device)
-                        for j, (o, t) in enumerate(tuple(zip(out, target))):
+                        mask = extractor(mixed_mag, dvec_samples[i]).to(device)
+                        out = (mask * mixed_mag).to(device)
+                        for j, (o, t) in enumerate(tuple(zip(out, target_mag))):
                             #sanity check
                             # print(i, j, o.shape, t.shape)
                             losses[i, j] = loss_func(o, t)
-                    losses = losses.numpy().T
+                    losses = losses.cpu().numpy().T #numpy cant be used on tensors on gpu
                     indices = np.argmin(losses, axis=1)
                     #sanity check
                     # print(indices)
