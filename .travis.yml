@@ -18,7 +18,7 @@ script:
   - python3 downloader.py
   - ls
   # - python3 dvec_gen.py
-  - python3 main.py
+  # - python3 main.py
   # - python3 test.py
 
 after_success:
