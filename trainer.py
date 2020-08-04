@@ -176,8 +176,14 @@ def train(
             # print(output.shape)
             # print(target_mag.shape)
             # loss_func = nn.MSELoss()
-            loss = loss_func(output, target_mag)
-
+            if loss_func == nn.MSELoss():
+                loss = loss_func(output, target_mag)
+            else :
+                #concatenate output and targets for GE2E loss
+                loss = 0.
+                for _ in range(Consts.batch_size):
+                    loss += loss_func(torch.tensor([out, mask]))
+                loss = loss / Consts.batch_size
             # 3) clear gradient cache
             optimizer.zero_grad()
 

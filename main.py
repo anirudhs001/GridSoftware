@@ -15,6 +15,9 @@ import Consts
 import models
 import trainer
 
+#Generalised end-to-end loss, same as used in the paper
+from GE2ELoss.ge2e import GE2ELoss
+
 # for lr finder
 # from fastai import *
 
@@ -102,23 +105,9 @@ if __name__ == "__main__":
     embedder = models.Embedder()
     extractor = models_test.Extractor()  # testing new extractor
 
-    # Using PMSQE loss
-    # sr for scale
-    # samplerate = zounds.SR16000()
-    # scale = zounds.BarkScale(
-    #     frequency_band=zounds.FrequencyBand(1, samplerate.nyquist),
-    #     n_bands=512)
-
-    # perceptual_loss = PerceptualLoss(
-    #     scale,
-    #     samplerate,
-    #     lap=1,
-    #     log_factor=10,
-    #     basis_size=512,
-    #     frequency_weighting=zounds.AWeighting(),
-    #     cosine_similarity=True).to(device)
-    # loss_func = SingleSrcPMSQE(sample_rate=16000)
-    loss_func = nn.MSELoss()
+    # Using GE2E loss
+    loss_func = GE2ELoss()
+    # loss_func = nn.MSELoss()
 
     # Train!
     extractor_dest = os.path.join(Consts.MODELS_DIR, "extractor_new")
