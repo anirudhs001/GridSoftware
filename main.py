@@ -134,7 +134,7 @@ if __name__ == "__main__":
         # extractor_source=os.path.join(Consts.MODELS_DIR, "extractor-21-7"
         extractor_source=None,
         extractor_dest=extractor_dest,
-        p=0.9, #probability of using a dvec by same speaker
+        p=1, #probability of using a dvec by same speaker.otherwise, try all the sample dvecs
     )
 
     print("training done!")

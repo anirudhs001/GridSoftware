@@ -58,14 +58,14 @@ class Extractor(nn.Module):
 
         self.conv4_resblock = nn.Sequential(
             # cnn7
-            nn.ZeroPad2d((2, 2, 8, 8)),
-            nn.Conv2d(64, 64, kernel_size=(5, 5), dilation=(4, 1)),
+            nn.ZeroPad2d((2, 2, 16, 16)),
+            nn.Conv2d(64, 64, kernel_size=(8, 1), dilation=(4, 1)),
             nn.BatchNorm2d(64),
             nn.ReLU(),
             # bs x 301 x 601 x 64
             # cnn8
-            nn.ZeroPad2d((2, 2, 16, 16)),
-            nn.Conv2d(64, 64, kernel_size=(5, 5), dilation=(8, 1)),
+            nn.ZeroPad2d((2, 2, 32, 32)),
+            nn.Conv2d(64, 64, kernel_size=(16, 5), dilation=(8, 1)),
             # nn.BatchNorm2d(64), nn.ReLU()
         )  # bs x 301 x 601 x 64
 
@@ -77,8 +77,7 @@ class Extractor(nn.Module):
             nn.ReLU(),
             # bs x 301 x 601 x 64
             # cnn10
-            nn.ZeroPad2d(2),
-            nn.Conv2d(64, 8, kernel_size=(5, 5), dilation=(1, 1)),
+            nn.Conv2d(64, 8, kernel_size=(1, 1), dilation=(1, 1)),
             # nn.BatchNorm2d(64), nn.ReLU()
         )  # bs x 301 x 601 x 8
 

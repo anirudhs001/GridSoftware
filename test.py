@@ -58,7 +58,7 @@ def wavTOspec(y, sr, n_fft):
 if __name__ == "__main__":
 
     # load model
-    extractor = models_test.Extractor()
+    extractor = models.Extractor()
     embedder = models.Embedder()
 
     embedder_pth = os.path.join(Consts.MODELS_DIR, "embedder.pt")
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     embedder.eval()
 
     extractor_pth = os.path.join(
-        Consts.MODELS_DIR, "extractor_new/extractor-28-7-20/extractor_final_29-7-3.pt"
+        Consts.MODELS_DIR, "extractor_old/extractor-3-8-3/extractor_final_3-8-7.pt"
     )
     # extractor = torch.nn.DataParallel(extractor)
     extractor.load_state_dict(
@@ -99,6 +99,14 @@ if __name__ == "__main__":
     dvec_mel = torch.load(dvec_path, map_location="cpu")
     dvec_mel = torch.from_numpy(dvec_mel).detach()
 
+    #load sample dvecs
+    if os.path.exists(Consts.DVEC_SRC):
+        dvec_samples_pth = glob.glob(os.path.join(Consts.DVEC_SRC, "*.pt"))
+        dvec_samples = list()  # stored in a list
+        for pth in dvec_samples_pth:
+            dvec_samples.append(torch.load(pth, map_location=torch.device("cpu")))
+
+
     # begin inference
     dvec = embedder(dvec_mel)
     # make batches of dvec and mixed
@@ -117,11 +125,27 @@ if __name__ == "__main__":
     final_wav = specTOwav(output, phase)  # same phase as from mixed file
     # print(output)
     # final_wav = final_wav * 20 #20dB increase in volume if its too low
+    librosa.output.write_wav("./Results/output.wav", final_wav, sr=16000)
     print("playing final audio")
     # sounddevice.play(final_wav, samplerate=10000)
     # time.sleep(4)
 
+    #same stuff, but with sample dvecs
+    for i, d in enumerate(dvec_samples):
+        d = d.unsqueeze(0)
+        mask = extractor(mixed_mag, dvec)
+        output = mask * mixed_mag
+        output = output[0].detach().numpy()
+        # get wav from spectrogram
+        final_wav = specTOwav(output, phase)  # same phase as from mixed file
+        # print(output)
+
+        librosa.output.write_wav(f"./Results/output{i}.wav", final_wav, sr=16000)
+
+
+    # final_wav = final_wav * 20 #20dB increase in volume if its too low
+    print("playing final audio")
+
     # save all files for reference
     librosa.output.write_wav("./Results/noisy.wav", mixed_wav, sr=16000)
     librosa.output.write_wav("./Results/clean.wav", targ_wav, sr=16000)
-    librosa.output.write_wav("./Results/output.wav", final_wav, sr=16000)

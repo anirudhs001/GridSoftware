@@ -3,6 +3,7 @@ datasets/raw/Noisy
 datasets/raw/LibriSpeech
 datasets/raw/dev-clean.tar.gz
 models/extractor_new
+models/extractor_old
 __pycache__
 .vscode
 flipkart_files

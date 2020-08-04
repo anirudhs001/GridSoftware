@@ -55,7 +55,7 @@ class Extractor(nn.Module):
             nn.ZeroPad2d((3, 3, 0, 0)),
             nn.Conv2d(1, 64, kernel_size=(1, 7), dilation=(1, 1)),
             nn.BatchNorm2d(64),
-            nn.ReLU(),  # bs x 300 x 600
+            nn.ReLU(),  # bs x 301 x 601
             # cnn2
             nn.ZeroPad2d((0, 0, 3, 3)),
             nn.Conv2d(64, 64, kernel_size=(7, 1), dilation=(1, 1)),
