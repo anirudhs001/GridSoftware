@@ -1,0 +1,3 @@
+[submodule "GE2ELoss"]
+	path = GE2ELoss
+	url = https://github.com/cvqluu/GE2E-Loss.git
