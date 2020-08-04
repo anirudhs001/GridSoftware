@@ -15,14 +15,13 @@ import Consts
 import models
 import trainer
 
-#Generalised end-to-end loss, same as used in the paper
-from GE2ELoss.ge2e import GE2ELoss
-
 # for lr finder
 # from fastai import *
 
 # EXPERIMENTAL STUFF:
 import models_test
+#Generalised end-to-end loss, same as used in the paper
+from GE2ELoss.ge2e import GE2ELoss
 
 ########################################################
 ##DATASET and DATALOADER:
@@ -106,8 +105,10 @@ if __name__ == "__main__":
     extractor = models_test.Extractor()  # testing new extractor
 
     # Using GE2E loss
-    loss_func = GE2ELoss()
+    loss_func = GE2ELoss(loss_method='contrast').to(device)
+    loss_name = "GE2ELoss"
     # loss_func = nn.MSELoss()
+    # loss_name = "MSELoss"
 
     # Train!
     extractor_dest = os.path.join(Consts.MODELS_DIR, "extractor_new")
@@ -117,10 +118,11 @@ if __name__ == "__main__":
         embedder,
         extractor,
         loss_func=loss_func,
+        loss_name=loss_name,
         device=device,
-        lr=3e-3,
+        lr=1e-7,
         num_epochs=2,
-        # extractor_source=os.path.join(Consts.MODELS_DIR, "extractor-21-7"
+        # extractor_source=os.path.join(Consts.MODELS_DIR, "extractor_old/extractor-28-7-20/extractor_final_29-7-3.pt"),
         extractor_source=None,
         extractor_dest=extractor_dest,
         p=1, #probability of using a dvec by same speaker.otherwise, try all the sample dvecs

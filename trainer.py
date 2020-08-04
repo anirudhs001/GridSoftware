@@ -11,6 +11,7 @@ import models
 
 import time
 import random  # for tossing
+import math
 
 # progress bar
 from tqdm import tqdm
@@ -21,6 +22,7 @@ def train(
     embedder,
     extractor,
     loss_func,
+    loss_name,
     device,
     lr,
     num_epochs,
@@ -114,8 +116,8 @@ def train(
             ###########################
             # select a dvec for batch #
             ###########################
-            # dvec_routine returns the same dvec with a probability p. Otherwise, it returns a batch of dvecs,
-            # which MINIMISES the LOSS for each noisy sample in the batch.
+            # use the corresponding dvec to target with a probability p. Otherwise, for each sample in batch,
+            # select dvec which MINIMISES the LOSS for each noisy sample in the batch.
 
             with torch.no_grad():  # no gradient for any of the computations
                 x = random.choice(range(1, 101))
@@ -176,14 +178,19 @@ def train(
             # print(output.shape)
             # print(target_mag.shape)
             # loss_func = nn.MSELoss()
-            if loss_func == nn.MSELoss():
+            if loss_name == "MSELoss":
                 loss = loss_func(output, target_mag)
             else :
                 #concatenate output and targets for GE2E loss
                 loss = 0.
-                for _ in range(Consts.batch_size):
-                    loss += loss_func(torch.tensor([out, mask]))
-                loss = loss / Consts.batch_size
+                i = 1
+                for o, t in tuple(zip(output, target_mag)):
+                    loss_mat = torch.stack((o, t)).to(device)
+                    l = loss_func(loss_mat).to(device) 
+                    if not math.isnan(l):
+                        loss += l
+                        i += 1
+                loss = (loss / i)
             # 3) clear gradient cache
             optimizer.zero_grad()
 
