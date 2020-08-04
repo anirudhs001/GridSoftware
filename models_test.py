@@ -23,12 +23,12 @@ class Extractor(nn.Module):
             nn.Conv2d(1, 8, kernel_size=(1, 7), dilation=(1, 1)),
             nn.BatchNorm2d(8),
             nn.ReLU(),
-            # bs x 301 x 600 x 8
+            # bs x 301 x 601 x 8
             # cnn2
             nn.ZeroPad2d((0, 0, 3, 3)),
             nn.Conv2d(8, 8, kernel_size=(7, 1), dilation=(1, 1)),
             # nn.BatchNorm2d(8), nn.ReLU(),
-        )  # bs x 300 x 600 x 8
+        )  # bs x 301 x 601 x 8
 
         self.conv2_resblock = nn.Sequential(
             # cnn3
@@ -36,12 +36,12 @@ class Extractor(nn.Module):
             nn.Conv2d(8, 64, kernel_size=(5, 5), dilation=(1, 1)),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            # bs x 300 x 600 x 64
+            # bs x 301 x 601 x 64
             # cnn4
             nn.ZeroPad2d((2, 2, 4, 4)),
             nn.Conv2d(64, 64, kernel_size=(5, 5), dilation=(2, 1)),
             # nn.BatchNorm2d(64), nn.ReLU(),
-        )  # bs x 300 x 600 x 64
+        )  # bs x 301 x 601 x 64
 
         self.conv3_resblock = nn.Sequential(
             # cnn5
@@ -49,12 +49,12 @@ class Extractor(nn.Module):
             nn.Conv2d(64, 64, kernel_size=(5, 5), dilation=(4, 1)),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            # bs x 300 x 600 x 64
+            # bs x 301 x 601 x 64
             # cnn6
-            nn.ZeroPad2d(2),
+            nn.ZeroPad2d((2, 2, 16, 16)),
             nn.Conv2d(64, 64, kernel_size=(5, 5), dilation=(8, 1)),
             # nn.BatchNorm2d(64), nn.ReLU()
-        )  # bs x 300 x 600 x 64
+        )  # bs x 301 x 601 x 64
 
         self.conv4_resblock = nn.Sequential(
             # cnn7
@@ -62,12 +62,12 @@ class Extractor(nn.Module):
             nn.Conv2d(64, 64, kernel_size=(5, 5), dilation=(4, 1)),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            # bs x 300 x 600 x 64
+            # bs x 301 x 601 x 64
             # cnn8
-            nn.ZeroPad2d(2),
+            nn.ZeroPad2d((2, 2, 16, 16)),
             nn.Conv2d(64, 64, kernel_size=(5, 5), dilation=(8, 1)),
             # nn.BatchNorm2d(64), nn.ReLU()
-        )  # bs x 300 x 600 x 64
+        )  # bs x 301 x 601 x 64
 
         self.conv5_resblock = nn.Sequential(
             # cnn9
@@ -75,12 +75,12 @@ class Extractor(nn.Module):
             nn.Conv2d(64, 64, kernel_size=(5, 5), dilation=(1, 1)),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            # bs x 300 x 600 x 64
+            # bs x 301 x 601 x 64
             # cnn10
             nn.ZeroPad2d(2),
-            nn.Conv2d(64, 64, kernel_size=(5, 5), dilation=(32, 1)),
+            nn.Conv2d(64, 8, kernel_size=(5, 5), dilation=(1, 1)),
             # nn.BatchNorm2d(64), nn.ReLU()
-        )  # bs x 300 x 600 x 64
+        )  # bs x 301 x 601 x 8
 
         # EXTRAs: batch norm and relu sequential for resblocks
         self.batch_relu_64 = nn.Sequential(nn.BatchNorm2d(64), nn.ReLU(),)
@@ -106,12 +106,11 @@ class Extractor(nn.Module):
         x = self.conv2_resblock(x)
         x = self.batch_relu_64(x)
         # x: [B, 64, T-1, num_freq-1]
-
         y = self.conv3_resblock(x)
         # y: [B, 64, T-1, num_freq-1]
         # RESIDUAL connection
         x = y + x
-        del y  # free memory
+        # del y #deleting tensors does not free memory :(
 
         # batchnorm and relu
         x = self.batch_relu_64(x)
@@ -121,7 +120,8 @@ class Extractor(nn.Module):
         # y: [B, 64, T-1, num_freq-1]
         # RESIDUAL connection
         x = y + x
-        del y  # free memory
+        # del y #deleting tensors does not free memory :(
+
         # batchnorm and relu
         x = self.batch_relu_64(x)
         # x: [B, 64, T-1, num_freq-1]
