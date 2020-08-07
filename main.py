@@ -8,6 +8,7 @@ import glob
 import sounddevice
 import time
 import re
+
 # import zounds
 # from zounds.learn import PerceptualLoss
 
@@ -34,12 +35,12 @@ class customDataset(Dataset):
             os.path.join(Consts.DATA_DIR, "**/mixed.pt"), recursive=True
         )
 
-            # print(len(self.Targets))
-            # print(len(self.Dvecs))
-            # print(len(self.Mixed))
-        assert (
-            len(self.Targets) == len(self.Dvecs) == len(self.Mixed)
-        ), "number of targets, dvecs and mixed samples not same!"
+        # print(len(self.Targets))
+        # print(len(self.Dvecs))
+        # print(len(self.Mixed))
+        assert len(self.Targets) == len(
+            self.Mixed
+        ), "number of targets_list and mixed samples not same!"
 
     def __len__(self):
         return len(self.Targets)
@@ -47,11 +48,11 @@ class customDataset(Dataset):
     def __getitem__(self, idx):
         target = torch.load(self.Targets[idx])
         mixed = torch.load(self.Mixed[idx])
-        #get class from target name
+        # get class from target name
         pattern = r"(?<=clean_files\/).+(?=_spkr)"
-        clss = re.search(pattern, self.Targets[idx]).group(0) 
-        #load dvec
-        dvec_mel = torch.load(os.path.join(Consts.DVEC_SRC, clss + ".pt")) 
+        clss = re.search(pattern, self.Targets[idx]).group(0)
+        # load dvec
+        dvec_mel = torch.load(os.path.join(Consts.DVEC_SRC, clss + ".pt"))
 
         return mixed, target, dvec_mel
 
@@ -70,6 +71,7 @@ def collate_fn(batch):
     # stack
     mixed_list = torch.stack(mixed_list, dim=0)
     targets_list = torch.stack(targets_list, dim=0)
+    dvec_list = torch.stack(targets_list, dim=0)
 
     return mixed_list, targets_list, dvec_list
 
