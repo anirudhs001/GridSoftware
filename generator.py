@@ -9,7 +9,7 @@ import random
 import os
 import glob
 from multiprocessing import Pool, cpu_count
-
+import re
 import Consts
 
 # for downloading datasets
@@ -42,12 +42,7 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=False):
         os.mkdir(outDir)
 
     # get all speakers(foldernames) from NOIZEUS
-    NOIZEUS_speakers = glob.glob(os.path.join(DATA_DIR_RAW, "NOIZEUS/clean", "*"))
-    NOIZEUS_speakers = [
-        glob.glob(os.path.join(spkr_path, "**", "*.wav"), recursive=True)
-        for spkr_path in NOIZEUS_speakers
-    ]
-    NOIZEUS_speakers = [x for x in NOIZEUS_speakers if len(x) > 2]
+    NOIZEUS_speakers = glob.glob(os.path.join(DATA_DIR_RAW, "NOIZEUS/clean_files", "*.wav"))
 
     # noisy files from NOIZEUS
     NOIZEUS_unclean = glob.glob(
@@ -55,20 +50,19 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=False):
     )
 
     # get all speakers(foldernames) from flipkart
-    Flipkart_files = "./datasets/raw/Flipkart/"
-    flipkart_speakers = glob.glob(os.path.join(Flipkart_files, "clean_files/*"))
-    flipkart_speakers = [
-        glob.glob(os.path.join(spkr_path, "*")) for spkr_path in flipkart_speakers
-    ]
-    flipkart_speakers = [spkr for spkr in flipkart_speakers if len(spkr) > 2]
+    flipkart_speakers = glob.glob(os.path.join(DATA_DIR_RAW, "Flipkart/clean_files/**/*.wav"))
 
     # noisy files from flipkart
-    flipkart_unclean = glob.glob(os.path.join(Flipkart_files, "unused/*"))
+    flipkart_unclean = glob.glob(os.path.join(DATA_DIR_RAW, "Flipkart/unused/*.wav"))
 
     # concatenate all noises
     noises = np.concatenate((NOIZEUS_unclean, flipkart_unclean), axis=0)
+    #sanity check
+    # print(noises)
     # concatenate clean folders
     spkrs = np.concatenate((flipkart_speakers, NOIZEUS_speakers), axis=0)
+    #sanity check
+    # print(spkrs)
 
     # prepare dataset
     i = 1
@@ -76,12 +70,16 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=False):
     while i <= n:
 
         # randomly select some speakers for entire batch
-        spkr_select = [random.sample(spkrs, 1) for _ in range(BATCH_SIZE)]
+        spkr_select = [random.choice(spkrs) for _ in range(BATCH_SIZE)]
         # get speaker class(male, female, child) from name
-        clss = [s.split("_")[0] for s in spkr_select]
+        pattern = r"(?<=clean_files\/).+(?=_spkr)"
+
+        clss = [re.search(pattern, spkr).group(0) for spkr in spkr_select]
+        #sanity check
+        print(clss)
 
         # randomly select some noise files for each batch
-        noise_smpl = [random.sample(noises, num_spkrs - 1) for _ in range(BATCH_SIZE)]
+        noise_smpl = [random.sample(list(noises), num_spkrs - 1) for _ in range(BATCH_SIZE)]
 
         # run on all available cpus
         with Pool(cpu_count()) as p:
@@ -95,7 +93,7 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=False):
         i = i + BATCH_SIZE
         # status update
         # print(f"{i}/{n} files done!")
-        pbar.update(1000)
+        pbar.update(BATCH_SIZE)
 
     pbar.close()
 
@@ -106,8 +104,8 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=False):
 # any point if generator was abruptly shut down.
 def mix(clean, clss, noisy_list, sample_num, outDir, save_wav=True):
     # sanity check
-    # print("speakers list",(speakers_list))
-    # print("noise sample",noise_smpl)
+    # print("speakers list ", clean)
+    # print("noise sample",noisy_list)
     # print(sample_num)
     # print(outDir)
 
@@ -149,14 +147,9 @@ def mix(clean, clss, noisy_list, sample_num, outDir, save_wav=True):
     if os.path.exists(outpath):  # file already exists, exit
         return
 
-    # print("target", len(target))
-    # print("noisy_list", len(s_rest))
-    # select single audiofile from target folder
-    target_audio = random.sample(clean, 1)
-
     # open files
-    target_audio, _ = librosa.load(target_audio, sr=SAMPLING_RATE)
-    noisy_audios = [librosa.load(noisy_list, sr=SAMPLING_RATE)[0] for n in noisy_list]
+    target_audio, _ = librosa.load(clean, sr=SAMPLING_RATE)
+    noisy_audios = [librosa.load(n, sr=SAMPLING_RATE)[0] for n in noisy_list]
     # sanity check
     # print("files loaded")
 
