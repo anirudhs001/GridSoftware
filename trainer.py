@@ -47,9 +47,9 @@ def train(
 
     # Extractor
     if device == "cuda:0":
-        #put model on gpu
+        # put model on gpu
         # device_ids = [i for i in range(torch.cuda.device_count())]
-        # extractor = torch.nn.DataParallel(extractor, device_ids=device_ids) 
+        # extractor = torch.nn.DataParallel(extractor, device_ids=device_ids)
         extractor = extractor.to(device)
         # put model on gpu
         # extractor = torch.nn.DataParallel(extractor, device_ids=device)
@@ -67,7 +67,7 @@ def train(
             chkpt = chkpt_list[-2]  # TODO: sorted does not work. need to change this
             extractor.load_state_dict(torch.load(chkpt, map_location=device))
             # print(f"Loaded extractor: {chkpt}.")
-            print("Loaded extractor:%s."%chkpt) #for python3.5
+            print("Loaded extractor:%s." % chkpt)  # for python3.5
 
     extractor.train()
 
@@ -88,21 +88,6 @@ def train(
         os.makedirs(extractor_dest, exist_ok=True)
     # sanity check
     print(f"saving checkpoints at: {extractor_dest}")
-
-    # load sample dvecs
-    if os.path.exists(Consts.DVEC_SRC):
-        dvec_samples_pth = glob.glob(os.path.join(Consts.DVEC_SRC, "*.pt"))
-        dvec_samples = list()  # stored in a list
-        for pth in dvec_samples_pth:
-            dvec_samples.append(torch.load(pth, map_location=device))
-        #make copies of each dvec for entire batch
-        for i, dvec_s in enumerate(dvec_samples):
-            dvec_samples[i] = dvec_s.repeat(
-                Consts.batch_size, 1
-            ).to(device)  # copy dvec for each sample in batch
-    # sanity check
-    print(f"No of dvec samples found: {len(dvec_samples)}")
-
 
     # training loop
     for n in range(num_epochs):
@@ -132,18 +117,21 @@ def train(
                 else:
                     bs = Consts.batch_size
                     losses = torch.zeros(size=(len(dvec_samples), bs)).to(device)
-                    #sanity check
-                    # print(losses[1,4]) 
+                    # sanity check
+                    # print(losses[1,4])
                     for i in range(len(dvec_samples)):
                         mask = extractor(mixed_mag, dvec_samples[i]).to(device)
                         out = (mask * mixed_mag).to(device)
+                        # calculate element-wise loss to find the best dvec for each sample
                         for j, (o, t) in enumerate(tuple(zip(out, target_mag))):
-                            #sanity check
+                            # sanity check
                             # print(i, j, o.shape, t.shape)
                             losses[i, j] = loss_func(o, t)
-                    losses = losses.cpu().numpy().T #numpy cant be used on tensors on gpu
+                    losses = (
+                        losses.cpu().numpy().T
+                    )  # numpy cant be used on tensors on gpu
                     indices = np.argmin(losses, axis=1)
-                    #sanity check
+                    # sanity check
                     # print(indices)
                     dvec_list = list()
                     for i in indices:
@@ -180,17 +168,13 @@ def train(
             # loss_func = nn.MSELoss()
             if loss_name == "MSELoss":
                 loss = loss_func(output, target_mag)
-            else :
-                #concatenate output and targets for GE2E loss
-                loss = 0.
-                i = 1
+            else:
+                # concatenate output and targets for GE2E loss
+                loss = 0.0
                 for o, t in tuple(zip(output, target_mag)):
                     loss_mat = torch.stack((o, t)).to(device)
-                    l = loss_func(loss_mat).to(device) 
-                    if not math.isnan(l):
-                        loss += l
-                        i += 1
-                loss = (loss / i)
+                    loss = loss_func(loss_mat).to(device)
+                loss = loss / Consts.batch_size
             # 3) clear gradient cache
             optimizer.zero_grad()
 

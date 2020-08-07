@@ -7,7 +7,7 @@ import os
 import glob
 import sounddevice
 import time
-
+import re
 # import zounds
 # from zounds.learn import PerceptualLoss
 
@@ -20,8 +20,6 @@ import trainer
 
 # EXPERIMENTAL STUFF:
 import models_test
-#Generalised end-to-end loss, same as used in the paper
-from GE2ELoss.ge2e import GE2ELoss
 
 ########################################################
 ##DATASET and DATALOADER:
@@ -32,16 +30,13 @@ class customDataset(Dataset):
         self.Targets = glob.glob(
             os.path.join(Consts.DATA_DIR, "**/target.pt"), recursive=True
         )
-        self.Dvecs = glob.glob(
-            os.path.join(Consts.DATA_DIR, "**/dvec.pt"), recursive=True
-        )
         self.Mixed = glob.glob(
             os.path.join(Consts.DATA_DIR, "**/mixed.pt"), recursive=True
         )
 
-        # print(len(self.Targets))
-        # print(len(self.Dvecs))
-        # print(len(self.Mixed))
+            # print(len(self.Targets))
+            # print(len(self.Dvecs))
+            # print(len(self.Mixed))
         assert (
             len(self.Targets) == len(self.Dvecs) == len(self.Mixed)
         ), "number of targets, dvecs and mixed samples not same!"
@@ -51,11 +46,13 @@ class customDataset(Dataset):
 
     def __getitem__(self, idx):
         target = torch.load(self.Targets[idx])
-        dvec_mel = torch.load(self.Dvecs[idx])
         mixed = torch.load(self.Mixed[idx])
-        # target = torch.from_file(self.Targets[idx])
-        # dvec_mel = torch.from_file(self.Dvecs[idx])
-        # mixed = torch.from_file(self.Mixed[idx])
+        #get class from target name
+        pattern = r"(?<=clean_files\/).+(?=_spkr)"
+        clss = re.search(pattern, self.Targets[idx]).group(0) 
+        #load dvec
+        dvec_mel = torch.load(os.path.join(Consts.DVEC_SRC, clss + ".pt")) 
+
         return mixed, target, dvec_mel
 
 
@@ -90,7 +87,7 @@ if __name__ == "__main__":
 
     # testing: WORKS!
     print("dataset size:", data_loader.dataset.__len__())
-    inp, targ, dvec = data_loader.dataset.__getitem__(5)
+    # inp, targ, dvec = data_loader.dataset.__getitem__(5)
     # print(f"inp size{inp.size}")
     # print(f"targ size{targ.size}")
     # print("dvec size",dvec.size)
@@ -99,16 +96,16 @@ if __name__ == "__main__":
     # time.sleep(3)
 
     # load models
-    device = ("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
     print(f"training on {device}")
     embedder = models.Embedder()
     extractor = models_test.Extractor()  # testing new extractor
 
-    # Using GE2E loss
-    loss_func = GE2ELoss(loss_method='contrast').to(device)
-    loss_name = "GE2ELoss"
-    # loss_func = nn.MSELoss()
-    # loss_name = "MSELoss"
+    # # Using GE2E loss
+    # loss_func = GE2ELoss(loss_method='contrast').to(device)
+    # loss_name = "GE2ELoss"
+    loss_func = nn.MSELoss()
+    loss_name = "MSELoss"
 
     # Train!
     extractor_dest = os.path.join(Consts.MODELS_DIR, "extractor_new")
@@ -120,12 +117,12 @@ if __name__ == "__main__":
         loss_func=loss_func,
         loss_name=loss_name,
         device=device,
-        lr=1e-7,
+        lr=3e-3,
         num_epochs=2,
         # extractor_source=os.path.join(Consts.MODELS_DIR, "extractor_old/extractor-28-7-20/extractor_final_29-7-3.pt"),
         extractor_source=None,
         extractor_dest=extractor_dest,
-        p=1, #probability of using a dvec by same speaker.otherwise, try all the sample dvecs
+        p=0,  # probability of using a dvec by same speaker.otherwise, try all the sample dvecs
     )
 
     print("training done!")
