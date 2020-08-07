@@ -42,7 +42,9 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=False):
         os.mkdir(outDir)
 
     # get all speakers(foldernames) from NOIZEUS
-    NOIZEUS_speakers = glob.glob(os.path.join(DATA_DIR_RAW, "NOIZEUS/clean_files", "*.wav"))
+    NOIZEUS_speakers = glob.glob(
+        os.path.join(DATA_DIR_RAW, "NOIZEUS/clean_files", "*.wav")
+    )
 
     # noisy files from NOIZEUS
     NOIZEUS_unclean = glob.glob(
@@ -50,18 +52,20 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=False):
     )
 
     # get all speakers(foldernames) from flipkart
-    flipkart_speakers = glob.glob(os.path.join(DATA_DIR_RAW, "Flipkart/clean_files/**/*.wav"))
+    flipkart_speakers = glob.glob(
+        os.path.join(DATA_DIR_RAW, "Flipkart/clean_files/**/*.wav")
+    )
 
     # noisy files from flipkart
     flipkart_unclean = glob.glob(os.path.join(DATA_DIR_RAW, "Flipkart/unused/*.wav"))
 
     # concatenate all noises
     noises = np.concatenate((NOIZEUS_unclean, flipkart_unclean), axis=0)
-    #sanity check
+    # sanity check
     # print(noises)
     # concatenate clean folders
     spkrs = np.concatenate((flipkart_speakers, NOIZEUS_speakers), axis=0)
-    #sanity check
+    # sanity check
     # print(spkrs)
 
     # prepare dataset
@@ -75,11 +79,13 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=False):
         pattern = r"(?<=clean_files\/).+(?=_spkr)"
 
         clss = [re.search(pattern, spkr).group(0) for spkr in spkr_select]
-        #sanity check
+        # sanity check
         print(clss)
 
         # randomly select some noise files for each batch
-        noise_smpl = [random.sample(list(noises), num_spkrs - 1) for _ in range(BATCH_SIZE)]
+        noise_smpl = [
+            random.sample(list(noises), num_spkrs - 1) for _ in range(BATCH_SIZE)
+        ]
 
         # run on all available cpus
         with Pool(cpu_count()) as p:
