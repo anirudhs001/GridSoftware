@@ -107,7 +107,6 @@ if __name__ == "__main__":
     # loss_func = GE2ELoss(loss_method='contrast').to(device)
     # loss_name = "GE2ELoss"
     loss_func = nn.MSELoss()
-    loss_name = "MSELoss"
 
     # Train!
     extractor_dest = os.path.join(Consts.MODELS_DIR, "extractor_new")
@@ -117,7 +116,6 @@ if __name__ == "__main__":
         embedder,
         extractor,
         loss_func=loss_func,
-        loss_name=loss_name,
         device=device,
         lr=3e-3,
         num_epochs=2,

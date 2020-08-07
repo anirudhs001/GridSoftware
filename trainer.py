@@ -22,7 +22,6 @@ def train(
     embedder,
     extractor,
     loss_func,
-    loss_name,
     device,
     lr,
     num_epochs,
@@ -96,62 +95,7 @@ def train(
             (mixed_mag, target_mag, dvec_mel) = batch
             mixed_mag = mixed_mag.to(device)
             target_mag = target_mag.to(device)
-            # dvec_mel = dvec_mel.to(device)
-
-            ###########################
-            # select a dvec for batch #
-            ###########################
-            # use the corresponding dvec to target with a probability p. Otherwise, for each sample in batch,
-            # select dvec which MINIMISES the LOSS for each noisy sample in the batch.
-
-            with torch.no_grad():  # no gradient for any of the computations
-                x = random.choice(range(1, 101))
-                if x <= 100 * p:
-                    # get embeddings of all dvecs in batch
-                    dvec_list = list()
-                    for dvec in dvec_mel:
-                        dvec = dvec.to(device)
-                        emb = embedder(dvec)
-                        dvec_list.append(emb)
-
-                else:
-                    bs = Consts.batch_size
-                    losses = torch.zeros(size=(len(dvec_samples), bs)).to(device)
-                    # sanity check
-                    # print(losses[1,4])
-                    for i in range(len(dvec_samples)):
-                        mask = extractor(mixed_mag, dvec_samples[i]).to(device)
-                        out = (mask * mixed_mag).to(device)
-                        # calculate element-wise loss to find the best dvec for each sample
-                        for j, (o, t) in enumerate(tuple(zip(out, target_mag))):
-                            # sanity check
-                            # print(i, j, o.shape, t.shape)
-                            losses[i, j] = loss_func(o, t)
-                    losses = (
-                        losses.cpu().numpy().T
-                    )  # numpy cant be used on tensors on gpu
-                    indices = np.argmin(losses, axis=1)
-                    # sanity check
-                    # print(indices)
-                    dvec_list = list()
-                    for i in indices:
-                        dvec_list.append(dvec_samples[i][0])
-
-            #########################
-            # finish dvec selection #
-            #########################
-
-            # get embeddings of all dvecs in batch
-            # dvec_list = list()
-            # for dvec in dvec_mel:
-            #     dvec = dvec.to(device)
-            #     emb = embedder(dvec)
-            #     dvec_list.append(emb)
-
-            # stack all dvecs in a single tensor
-            dvec_mel = torch.stack(dvec_list, dim=0).to(device)
-            # no gradients for dvec
-            dvec_mel.detach().to(device)
+            dvec_mel = dvec_mel.to(device)
 
             # TRAIN EXTRACTOR
 
@@ -166,15 +110,8 @@ def train(
             # print(output.shape)
             # print(target_mag.shape)
             # loss_func = nn.MSELoss()
-            if loss_name == "MSELoss":
-                loss = loss_func(output, target_mag)
-            else:
-                # concatenate output and targets for GE2E loss
-                loss = 0.0
-                for o, t in tuple(zip(output, target_mag)):
-                    loss_mat = torch.stack((o, t)).to(device)
-                    loss = loss_func(loss_mat).to(device)
-                loss = loss / Consts.batch_size
+            loss = loss_func(output, target_mag)
+
             # 3) clear gradient cache
             optimizer.zero_grad()
 
