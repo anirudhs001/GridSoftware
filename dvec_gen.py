@@ -17,9 +17,9 @@ if __name__ == "__main__":
     Female_spkr = [x for x in spkr_list if x.find("Female_") != -1]
     Child_spkr = [x for x in spkr_list if x.find("Child_") != -1]
     spkr_dict = {
-        "male": Male_spkr,
-        "female": Female_spkr,
-        "child": Child_spkr,
+        "Male": Male_spkr,
+        "Female": Female_spkr,
+        "Child": Child_spkr,
     }
 
     # sanity check
@@ -61,7 +61,7 @@ if __name__ == "__main__":
             # save dvec
             if not os.path.exists(Consts.DVEC_SRC):
                 os.makedirs(Consts.DVEC_SRC)
-            path = os.path.join(Consts.DVEC_SRC, f"class-{key}.pt")
+            path = os.path.join(Consts.DVEC_SRC, f"{key}.pt")
             torch.save(dvec_avg, path)
             print(f"{key} done")
 
