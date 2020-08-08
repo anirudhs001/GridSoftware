@@ -84,12 +84,10 @@ class Extractor(nn.Module):
         # EXTRAs: batch norm and relu sequential for resblocks
         self.batch_relu_64 = nn.Sequential(nn.BatchNorm2d(64), nn.ReLU(),)
         self.batch_relu_8 = nn.Sequential(nn.BatchNorm2d(8), nn.ReLU(),)
-        # droupout layer for dvec(NOT using F.dropout since it is not disabled in eval mode)
-        self.dropout = nn.Dropout(p=0.1)
 
         # LSTMs and FC layers ( same os old model )
-        # inp = bs x T x 8*num_freq + emb_dim
-        self.lstm = nn.LSTM(5064, 400, batch_first=True, bidirectional=True)
+        # inp = bs x T x 8*num_freq 
+        self.lstm = nn.LSTM(4808, 400, batch_first=True, bidirectional=True)
 
         self.fc1 = nn.Linear(2 * 400, 600)
         self.fc2 = nn.Linear(600, 601)
@@ -133,17 +131,6 @@ class Extractor(nn.Module):
         # x: [B, T, 8, num_freq]
         x = x.view(x.size(0), x.size(1), -1)
         # x: [B, T, 8*num_freq]
-
-        # dvec: [B, emb_dim]
-        dvec = dvec.unsqueeze(1)
-        dvec = dvec.repeat(1, x.size(1), 1)
-        # dvec: [B, T, emb_dim]
-        dvec = self.dropout(
-            dvec
-        )  # adding dropout so model does not become too dependent on the dvec
-        # dvec: [B, T, emb_dim]
-
-        x = torch.cat((x, dvec), dim=2)  # [B, T, 8*num_freq + emb_dim]
 
         x, _ = self.lstm(x)  # [B, T, 2*lstm_dim]
         x = F.relu(x)
