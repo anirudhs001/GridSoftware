@@ -19,7 +19,6 @@ from tqdm import tqdm
 
 def train(
     dataloader,
-    embedder,
     extractor,
     loss_func,
     device,
@@ -27,22 +26,7 @@ def train(
     num_epochs,
     extractor_source,
     extractor_dest,
-    p=0.9,
 ):
-
-    # load pretrained embedder
-    embedder_pth = os.path.join(Consts.MODELS_DIR, "embedder.pt")
-    if not os.path.exists(embedder_pth):
-        print("downloading pretrained embedder...")
-        # save it:
-        request = requests.get(Consts.url_embedder, allow_redirects=True)
-        with open(embedder_pth, "wb+") as f:
-            f.write(request.content)
-    embedder.load_state_dict(torch.load(embedder_pth, map_location=device))
-    print("embedder loaded!")
-    # embedder in eval mode
-    embedder.to(device)
-    embedder.eval()
 
     # Extractor
     if device == "cuda:0":
@@ -61,12 +45,9 @@ def train(
         print("No extractor provided, starting from scratch.")
 
     if extractor_source is not None:
-        chkpt_list = sorted(glob.glob(os.path.join(extractor_source, "*.pt")))
-        if len(chkpt_list):
-            chkpt = chkpt_list[-2]  # TODO: sorted does not work. need to change this
-            extractor.load_state_dict(torch.load(chkpt, map_location=device))
-            # print(f"Loaded extractor: {chkpt}.")
-            print("Loaded extractor:%s." % chkpt)  # for python3.5
+        extractor.load_state_dict(torch.load(extractor_source, map_location=device))
+        # print(f"Loaded extractor: {chkpt}.")
+        print("Loaded extractor:%s." % extractor_source)  # for python3.5
 
     extractor.train()
 
@@ -92,24 +73,17 @@ def train(
     for n in range(num_epochs):
         for batch_id, batch in tqdm(enumerate(dataloader), desc="Batch"):
 
-            (mixed_mag, target_mag, dvec_mel) = batch
+            (mixed_mag, target_mag) = batch
             mixed_mag = mixed_mag.to(device)
             target_mag = target_mag.to(device)
-            dvec_mel = dvec_mel.to(device)
 
             # TRAIN EXTRACTOR
 
             # 1) predict output
-            mask = extractor(mixed_mag, dvec_mel)
+            mask = extractor(mixed_mag)
             output = (mask * mixed_mag).to(device)
 
             # 2) loss
-            # output = transforms.take_mag(output)
-            # target_mag = transforms.take_mag(target_mag)
-            # Sanity check
-            # print(output.shape)
-            # print(target_mag.shape)
-            # loss_func = nn.MSELoss()
             loss = loss_func(output, target_mag)
 
             # 3) clear gradient cache

@@ -36,7 +36,6 @@ class customDataset(Dataset):
         )
 
         # print(len(self.Targets))
-        # print(len(self.Dvecs))
         # print(len(self.Mixed))
         assert len(self.Targets) == len(
             self.Mixed
@@ -48,32 +47,23 @@ class customDataset(Dataset):
     def __getitem__(self, idx):
         target = torch.load(self.Targets[idx])
         mixed = torch.load(self.Mixed[idx])
-        # get class from target name
-        pattern = r"(?<=clean_files\/).+(?=_spkr)"
-        clss = re.search(pattern, self.Targets[idx]).group(0)
-        # load dvec
-        dvec_mel = torch.load(os.path.join(Consts.DVEC_SRC, clss + ".pt"))
-
-        return mixed, target, dvec_mel
+        return mixed, target
 
 
 def collate_fn(batch):
     targets_list = list()
     mixed_list = list()
-    dvec_list = list()  # unequal length, can't stack
 
-    for inp, targ, dvec_mel in batch:
+    for inp, targ_wav in batch:
         # add spectrograms to list
         mixed_list.append(torch.from_numpy(np.abs(inp)))
-        targets_list.append(torch.from_numpy(np.abs(targ)))
-        dvec_list.append(torch.from_numpy(dvec_mel))
+        targets_list.append(torch.from_numpy(np.abs(targ_wav)))
 
     # stack
     mixed_list = torch.stack(mixed_list, dim=0)
     targets_list = torch.stack(targets_list, dim=0)
-    dvec_list = torch.stack(targets_list, dim=0)
 
-    return mixed_list, targets_list, dvec_list
+    return mixed_list, targets_list
 
 
 ########################################################
@@ -100,8 +90,7 @@ if __name__ == "__main__":
     # load models
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     print(f"training on {device}")
-    embedder = models.Embedder()
-    extractor = models_test.Extractor()  # testing new extractor
+    extractor = models.Extractor()  # testing new extractor
 
     # # Using GE2E loss
     # loss_func = GE2ELoss(loss_method='contrast').to(device)
@@ -109,20 +98,18 @@ if __name__ == "__main__":
     loss_func = nn.MSELoss()
 
     # Train!
-    extractor_dest = os.path.join(Consts.MODELS_DIR, "extractor_new")
+    extractor_dest = os.path.join(Consts.MODELS_DIR, "extractor_old")
     print("beginning training:")
     trainer.train(
         data_loader,
-        embedder,
         extractor,
         loss_func=loss_func,
         device=device,
-        lr=3e-3,
+        lr=1e-3,
         num_epochs=2,
-        # extractor_source=os.path.join(Consts.MODELS_DIR, "extractor_old/extractor-28-7-20/extractor_final_29-7-3.pt"),
-        extractor_source=None,
+        extractor_source=os.path.join(Consts.MODELS_DIR, "extractor_old/extractor-9-8-4/extractor_final_9-8-7.pt"),
+        # extractor_source=None,
         extractor_dest=extractor_dest,
-        p=0,  # probability of using a dvec by same speaker.otherwise, try all the sample dvecs
     )
 
     print("training done!")
