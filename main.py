@@ -98,7 +98,7 @@ if __name__ == "__main__":
     loss_func = nn.MSELoss()
 
     # Train!
-    extractor_dest = os.path.join(Consts.MODELS_DIR, "extractor_new")
+    extractor_dest = os.path.join(Consts.MODELS_DIR, "extractor_old")
     print("beginning training:")
     trainer.train(
         data_loader,
