@@ -26,7 +26,7 @@ DATA_DIR_PROCESSED = "./datasets/processed"
 SAMPLING_RATE = Consts.SAMPLING_RATE
 DATASET_SIZE = Consts.dataset_size
 NUM_SPEAKERS = 2
-BATCH_SIZE = min(cpu_count() * 125, DATASET_SIZE)
+BATCH_SIZE = min(1000, DATASET_SIZE)
 
 ####################
 #   PREPARE DATA
@@ -34,7 +34,7 @@ BATCH_SIZE = min(cpu_count() * 125, DATASET_SIZE)
 
 # n = number of samples to make
 # NUM_SPEAKERS(2<=integer<=5) number of simultaneous speakers
-def prep_data(n=1e5, num_spkrs=2, save_wav=False):
+def prep_data(n=1e5, num_spkrs=2, save_wav=True):
 
     # make datafolder
     outDir = os.path.join(DATA_DIR_PROCESSED, "size=" + str(n))
@@ -42,31 +42,28 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=False):
         os.mkdir(outDir)
 
     # get all speakers(foldernames) from NOIZEUS
-    NOIZEUS_speakers = glob.glob(
-        os.path.join(DATA_DIR_RAW, "NOIZEUS/clean_files", "*.wav")
-    )
-
-    # noisy files from NOIZEUS
-    NOIZEUS_unclean = glob.glob(
-        os.path.join(DATA_DIR_RAW, "NOIZEUS/noisy/*.wav"), recursive=True
-    )
-
+    # NOIZEUS_clean = glob.glob(
+        # os.path.join(DATA_DIR_RAW, "NOIZEUS/clean", "**/*.wav"), recursive=True
+    # )
     # get all speakers(foldernames) from flipkart
-    flipkart_speakers = glob.glob(
-        os.path.join(DATA_DIR_RAW, "Flipkart/clean_files/**/*.wav")
+    flipkart_clean = glob.glob(
+        os.path.join(DATA_DIR_RAW, "Flipkart/clean/**/*.wav"), recursive=True
     )
-
     # noisy files from flipkart
-    flipkart_unclean = glob.glob(os.path.join(DATA_DIR_RAW, "Flipkart/unused/*.wav"))
+    flipkart_noisy = glob.glob(os.path.join(DATA_DIR_RAW, "Flipkart/noisy/*.wav"))
+    # unprocessed files from flipkart
+    flipkart_unused = glob.glob(os.path.join(DATA_DIR_RAW, "Flipkart/unclean/*.wav"))
 
-    # concatenate all noises
-    noises = np.concatenate((NOIZEUS_unclean, flipkart_unclean), axis=0)
     # sanity check
     # print(noises)
-    # concatenate clean folders
-    spkrs = np.concatenate((flipkart_speakers, NOIZEUS_speakers), axis=0)
+    # concatenate flipkart_clean and NOIZEUS folders
+    # spkrs = np.concatenate((flipkart_clean, NOIZEUS_clean), axis=0)
     # sanity check
     # print(spkrs)
+    # concatenate clean folders to unused 
+    # unused = np.concatenate((spkrs, flipkart_unused), axis=0)
+    unused = np.concatenate((flipkart_clean, flipkart_unused), axis=0)
+
 
     # prepare dataset
     i = 1
@@ -74,17 +71,14 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=False):
     while i <= n:
 
         # randomly select some speakers for entire batch
-        spkr_select = [random.choice(spkrs) for _ in range(BATCH_SIZE)]
-        # get speaker class(male, female, child) from name
-        pattern = r"(?<=clean_files\/).+(?=_spkr)"
-
-        clss = [re.search(pattern, spkr).group(0) for spkr in spkr_select]
-        # sanity check
-        print(clss)
-
+        spkr_smpl = [random.choice(flipkart_clean) for _ in range(BATCH_SIZE)]
         # randomly select some noise files for each batch
         noise_smpl = [
-            random.sample(list(noises), num_spkrs - 1) for _ in range(BATCH_SIZE)
+            random.choice(flipkart_noisy) for _ in range(BATCH_SIZE)
+        ]
+        #randomly select some unused files from each batch
+        unused_smpl = [
+            random.sample(list(unused), num_spkrs - 1) for _ in range(BATCH_SIZE)
         ]
 
         # run on all available cpus
@@ -92,7 +86,7 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=False):
             p.starmap(
                 mix,
                 [
-                    (spkr_select[j], clss[j], noise_smpl[j], i + j, outDir, save_wav)
+                    (spkr_smpl[j], noise_smpl[j], unused_smpl[j], i + j, outDir, save_wav)
                     for j in range(BATCH_SIZE)
                 ],
             )
@@ -108,7 +102,7 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=False):
 # music(bool) = True if need to add music as well
 # sample_num is the number of samples generated. It helps to continue from
 # any point if generator was abruptly shut down.
-def mix(clean, clss, noisy_list, sample_num, outDir, save_wav=True):
+def mix(clean, noisy, unused_list, sample_num, outDir, save_wav=True):
     # sanity check
     # print("speakers list ", clean)
     # print("noise sample",noisy_list)
@@ -155,24 +149,37 @@ def mix(clean, clss, noisy_list, sample_num, outDir, save_wav=True):
 
     # open files
     target_audio, _ = librosa.load(clean, sr=SAMPLING_RATE)
-    noisy_audios = [librosa.load(n, sr=SAMPLING_RATE)[0] for n in noisy_list]
+    noisy_audio, _ = librosa.load(noisy, sr=SAMPLING_RATE)
+    unused_audios = [librosa.load(u, sr=SAMPLING_RATE)[0] for u in unused_list]
     # sanity check
     # print("files loaded")
 
     # trim leading and trailing silence
-    target_audio, _ = librosa.effects.trim(target_audio, top_db=20)
-    noisy_audios = [librosa.effects.trim(n, top_db=20)[0] for n in noisy_audios]
+    # target_audio, _ = librosa.effects.trim(target_audio, top_db=20)
+    noisy_audio, _ = librosa.effects.trim(noisy_audio, top_db=20)
+    unused_audios = [librosa.effects.trim(u, top_db=20)[0] for u in unused_audios]
 
     # fit audio to 3 seconds, add zero padding if short
     # most noise files are less than 3 seconds
     L = SAMPLING_RATE * 3
     target_audio = shorten_file(target_audio, L)
-    noisy_audios = [shorten_file(n, L) for n in noisy_audios]
+    noisy_audio = shorten_file(noisy_audio, L)
+    unused_audios = [shorten_file(u, L) for u in unused_audios]
+
+    # make noisy same level as targ
+    norm_targ = np.max(np.abs(target_audio))
+    unused_audios = [u*norm_targ/(np.max(np.abs(u))) for u in unused_audios]
+    noisy_audio = noisy_audio*norm_targ/(np.max(np.abs(noisy_audio)))
+
+    #reduce magnitude of unused_audios and noisy
+    unused_audios = [u/3 for u in unused_audios]
+    noisy_audio = noisy_audio/5
 
     # mix files
     mixed = np.copy(target_audio)  # need to make copy cuz np.ndarrays are like pointers
-    for n in noisy_audios:
-        mixed += n
+    mixed += noisy_audio
+    for u in unused_audios:
+        mixed += u
 
     # norm
     norm = np.max(np.abs(mixed))
@@ -185,7 +192,7 @@ def mix(clean, clss, noisy_list, sample_num, outDir, save_wav=True):
     # save wavs if required
     if save_wav:
         librosa.output.write_wav(
-            os.path.join(outpath, f"{clss}-target.wav"), target_audio, sr=SAMPLING_RATE
+            os.path.join(outpath, "target.wav"), target_audio, sr=SAMPLING_RATE
         )
         librosa.output.write_wav(
             os.path.join(outpath, "mixed.wav"), mixed, sr=SAMPLING_RATE
@@ -200,7 +207,7 @@ def mix(clean, clss, noisy_list, sample_num, outDir, save_wav=True):
     )
 
     # save to files
-    target_path = os.path.join(outpath, f"{clss}-target.pt")
+    target_path = os.path.join(outpath, "target.pt")
     mixed_path = os.path.join(outpath, "mixed.pt")
 
     torch.save(target_audio_mag, target_path)
