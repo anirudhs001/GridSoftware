@@ -1,7 +1,7 @@
 
 
-torch==1.4 //older torch version for cuda unavailable
-torchaudio==0.4 //0.4 works with torch 1.4
+#torch==1.4
+#torchaudio==0.4 
 librosa==0.7
 sounddevice
 numba==0.48

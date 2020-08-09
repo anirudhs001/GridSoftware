@@ -73,7 +73,7 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=True):
         spkr_smpl = [random.choice(spkrs) for _ in range(BATCH_SIZE)]
         # randomly select some noise files for each batch
         noise_smpl = [
-            random.sample(list(flipkart_noisy), 1) for _ in range(BATCH_SIZE)
+            random.choice(flipkart_noisy) for _ in range(BATCH_SIZE)
         ]
         #randomly select some unused files from each batch
         unused_smpl = [
@@ -85,7 +85,7 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=True):
             p.starmap(
                 mix,
                 [
-                    (spkr_select[j], noise_smpl[j], unused_smpl[j], i + j, outDir, save_wav)
+                    (spkr_smpl[j], noise_smpl[j], unused_smpl[j], i + j, outDir, save_wav)
                     for j in range(BATCH_SIZE)
                 ],
             )
@@ -165,8 +165,14 @@ def mix(clean, noisy, unused_list, sample_num, outDir, save_wav=True):
     noisy_audio = shorten_file(noisy_audio, L)
     unused_audios = [shorten_file(u, L) for u in unused_audios]
 
-    #reduce magnitude of unused_audios by 4dB
-    unused_audios = [u/10000 for u in unused_audios]
+    # make noisy same level as targ
+    norm_targ = np.max(np.abs(target_audio))
+    unused_audios = [u*norm_targ/(np.max(np.abs(u))) for u in unused_audios]
+    noisy_audio = noisy_audio*norm_targ/(np.max(np.abs(noisy_audio)))
+
+    #reduce magnitude of unused_audios and noisy
+    unused_audios = [u/3 for u in unused_audios]
+    noisy_audio = noisy_audio/5
 
     # mix files
     mixed = np.copy(target_audio)  # need to make copy cuz np.ndarrays are like pointers

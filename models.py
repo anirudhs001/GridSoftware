@@ -92,12 +92,12 @@ class Extractor(nn.Module):
             nn.ReLU(),
         )
 
-        self.lstm = nn.LSTM(5064, 400, batch_first=True, bidirectional=True)
+        self.lstm = nn.LSTM(4808, 400, batch_first=True, bidirectional=True)
 
         self.fc1 = nn.Linear(2 * 400, 600)
         self.fc2 = nn.Linear(600, 601)
 
-    def forward(self, x, dvec):
+    def forward(self, x):
         # x: [B, T, num_freq]
         x = x.unsqueeze(1)
         # x: [B, 1, T, num_freq]
@@ -112,8 +112,6 @@ class Extractor(nn.Module):
         dvec = dvec.unsqueeze(1)
         dvec = dvec.repeat(1, x.size(1), 1)
         # dvec: [B, T, emb_dim]
-
-        x = torch.cat((x, dvec), dim=2)  # [B, T, 8*num_freq + emb_dim]
 
         x, _ = self.lstm(x)  # [B, T, 2*lstm_dim]
         x = F.relu(x)

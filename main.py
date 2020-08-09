@@ -29,15 +29,14 @@ import models_test
 class customDataset(Dataset):
     def __init__(self):
         self.Targets = glob.glob(
-            os.path.join(Consts.DATA_DIR, "**/*-target.pt"), recursive=True
+            os.path.join(Consts.DATA_DIR, "**/target.pt"), recursive=True
         )
         self.Mixed = glob.glob(
             os.path.join(Consts.DATA_DIR, "**/mixed.pt"), recursive=True
         )
 
         # print(len(self.Targets))
-        # print(len(self.Dvecs))
-        print(len(self.Mixed))
+        # print(len(self.Mixed))
         assert len(self.Targets) == len(
             self.Mixed
         ), "number of targets_list and mixed samples not same!"
@@ -58,7 +57,7 @@ def collate_fn(batch):
     for inp, targ_wav in batch:
         # add spectrograms to list
         mixed_list.append(torch.from_numpy(np.abs(inp)))
-        targets_list.append(torch.from_numpy(np.abs(targ)))
+        targets_list.append(torch.from_numpy(np.abs(targ_wav)))
 
     # stack
     mixed_list = torch.stack(mixed_list, dim=0)
@@ -91,7 +90,7 @@ if __name__ == "__main__":
     # load models
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     print(f"training on {device}")
-    extractor = models_test.Extractor()  # testing new extractor
+    extractor = models.Extractor()  # testing new extractor
 
     # # Using GE2E loss
     # loss_func = GE2ELoss(loss_method='contrast').to(device)

@@ -92,7 +92,7 @@ class Extractor(nn.Module):
         self.fc1 = nn.Linear(2 * 400, 600)
         self.fc2 = nn.Linear(600, 601)
 
-    def forward(self, x, dvec):
+    def forward(self, x):
         # x: [B, T, num_freq]
         x = x.unsqueeze(1)
         # x: [B, 1, T, num_freq]

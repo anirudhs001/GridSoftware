@@ -58,15 +58,10 @@ def wavTOspec(y, sr, n_fft):
 if __name__ == "__main__":
 
     # load model
-    extractor = models.Extractor()
-    embedder = models.Embedder()
-
-    embedder_pth = os.path.join(Consts.MODELS_DIR, "embedder.pt")
-    embedder.load_state_dict(torch.load(embedder_pth, map_location=torch.device("cpu")))
-    embedder.eval()
+    extractor = models_test.Extractor()
 
     extractor_pth = os.path.join(
-        Consts.MODELS_DIR, "extractor_old/extractor-3-8-3/extractor_final_3-8-7.pt"
+        Consts.MODELS_DIR, "extractor_new/extractor-8-8-12/extractor_epoch-0_batch-900.pt"
     )
     # extractor = torch.nn.DataParallel(extractor)
     extractor.load_state_dict(
@@ -76,7 +71,7 @@ if __name__ == "__main__":
 
     # load input file
     inp_path = glob.glob(os.path.join(Consts.DATA_DIR, "**/mixed.wav"))
-    inp_path = inp_path[0]
+    inp_path = inp_path[2]
     print(f"loading: {inp_path}")
     mixed_wav, _ = librosa.load(inp_path, sr=Consts.SAMPLING_RATE)
     mixed_mag, phase = wavTOspec(mixed_wav, sr=Consts.SAMPLING_RATE, n_fft=1200)
@@ -87,64 +82,25 @@ if __name__ == "__main__":
 
     # load target
     targ_path = glob.glob(os.path.join(Consts.DATA_DIR, "**/target.wav"))
-    targ_path = targ_path[3]
+    targ_path = targ_path[2]
     targ_wav, _ = librosa.load(targ_path, sr=Consts.SAMPLING_RATE)
     print("playing target audio")
     # sounddevice.play(targ_wav, samplerate=16000)
     # time.sleep(3)
 
-    # load dvec file
-    dvec_path = glob.glob(os.path.join(Consts.DATA_DIR, "**/dvec.pt"))
-    dvec_path = dvec_path[3]
-    dvec_mel = torch.load(dvec_path, map_location="cpu")
-    dvec_mel = torch.from_numpy(dvec_mel).detach()
 
-    #load sample dvecs
-    if os.path.exists(Consts.DVEC_SRC):
-        dvec_samples_pth = glob.glob(os.path.join(Consts.DVEC_SRC, "*.pt"))
-        dvec_samples = list()  # stored in a list
-        for pth in dvec_samples_pth:
-            dvec_samples.append(torch.load(pth, map_location=torch.device("cpu")))
-
-
-    # begin inference
-    dvec = embedder(dvec_mel)
-    # make batches of dvec and mixed
-    dvec = dvec.unsqueeze(0)
-    mixed_mag = mixed_mag.unsqueeze(0)
-    # get mask
-    print(f"dvec size:{dvec.shape}, mixed_mag size:{mixed_mag.shape}")
-    print("running extractor")
-    mask = extractor(mixed_mag, dvec)
-    print("extractor done")
-
-    print("applying mask on noisy file")
-    output = mixed_mag * mask
+    mask = extractor(mixed_mag.unsqueeze(0))
+    output = mask * mixed_mag
     output = output[0].detach().numpy()
     # get wav from spectrogram
     final_wav = specTOwav(output, phase)  # same phase as from mixed file
     # print(output)
-    # final_wav = final_wav * 20 #20dB increase in volume if its too low
-    librosa.output.write_wav("./Results/output.wav", final_wav, sr=16000)
-    print("playing final audio")
-    # sounddevice.play(final_wav, samplerate=10000)
-    # time.sleep(4)
 
-    #same stuff, but with sample dvecs
-    for i, d in enumerate(dvec_samples):
-        d = d.unsqueeze(0)
-        mask = extractor(mixed_mag, dvec)
-        output = mask * mixed_mag
-        output = output[0].detach().numpy()
-        # get wav from spectrogram
-        final_wav = specTOwav(output, phase)  # same phase as from mixed file
-        # print(output)
-
-        librosa.output.write_wav(f"./Results/output{i}.wav", final_wav, sr=16000)
+    librosa.output.write_wav(f"./Results/output.wav", final_wav, sr=16000)
 
 
     # final_wav = final_wav * 20 #20dB increase in volume if its too low
-    print("playing final audio")
+    # print("playing final audio")
 
     # save all files for reference
     librosa.output.write_wav("./Results/noisy.wav", mixed_wav, sr=16000)
