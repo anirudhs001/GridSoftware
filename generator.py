@@ -42,9 +42,9 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=True):
         os.mkdir(outDir)
 
     # get all speakers(foldernames) from NOIZEUS
-    NOIZEUS_clean = glob.glob(
-        os.path.join(DATA_DIR_RAW, "NOIZEUS/clean", "**/*.wav"), recursive=True
-    )
+    # NOIZEUS_clean = glob.glob(
+        # os.path.join(DATA_DIR_RAW, "NOIZEUS/clean", "**/*.wav"), recursive=True
+    # )
     # get all speakers(foldernames) from flipkart
     flipkart_clean = glob.glob(
         os.path.join(DATA_DIR_RAW, "Flipkart/clean/**/*.wav"), recursive=True
@@ -57,11 +57,12 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=True):
     # sanity check
     # print(noises)
     # concatenate flipkart_clean and NOIZEUS folders
-    spkrs = np.concatenate((flipkart_clean, NOIZEUS_clean), axis=0)
+    # spkrs = np.concatenate((flipkart_clean, NOIZEUS_clean), axis=0)
     # sanity check
     # print(spkrs)
     # concatenate clean folders to unused 
-    unused = np.concatenate((spkrs, flipkart_unused), axis=0)
+    # unused = np.concatenate((spkrs, flipkart_unused), axis=0)
+    unused = np.concatenate((flipkart_clean, flipkart_unused), axis=0)
 
 
     # prepare dataset
@@ -70,7 +71,7 @@ def prep_data(n=1e5, num_spkrs=2, save_wav=True):
     while i <= n:
 
         # randomly select some speakers for entire batch
-        spkr_smpl = [random.choice(spkrs) for _ in range(BATCH_SIZE)]
+        spkr_smpl = [random.choice(flipkart_clean) for _ in range(BATCH_SIZE)]
         # randomly select some noise files for each batch
         noise_smpl = [
             random.choice(flipkart_noisy) for _ in range(BATCH_SIZE)
@@ -154,7 +155,7 @@ def mix(clean, noisy, unused_list, sample_num, outDir, save_wav=True):
     # print("files loaded")
 
     # trim leading and trailing silence
-    target_audio, _ = librosa.effects.trim(target_audio, top_db=20)
+    # target_audio, _ = librosa.effects.trim(target_audio, top_db=20)
     noisy_audio, _ = librosa.effects.trim(noisy_audio, top_db=20)
     unused_audios = [librosa.effects.trim(u, top_db=20)[0] for u in unused_audios]
 
