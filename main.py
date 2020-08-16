@@ -21,7 +21,7 @@ import trainer
 
 # EXPERIMENTAL STUFF:
 import models_test
-from GE2E-Loss/ge2e import GE2ELoss
+from GE2ELoss/ge2e import GE2ELoss
 
 ########################################################
 ##DATASET and DATALOADER:

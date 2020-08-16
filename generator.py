@@ -167,7 +167,7 @@ def mix(clean, noisy, sample_num, outDir, save_wav=True):
     # make noisy same level as targ
     norm_targ = np.max(np.abs(target_audio))
     noisy_audio = noisy_audio * norm_targ / (np.max(np.abs(noisy_audio)))
-    noisy_audio /=5 # reduce volume of noisy
+    noisy_audio /= 5  # reduce volume of noisy
 
     # mix files
     # need to make copy cuz np.ndarrays are like pointers
