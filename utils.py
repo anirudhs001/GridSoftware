@@ -1,6 +1,6 @@
 import numpy as np
 import librosa
-import Consts
+import consts
 
 # TODO: get this
 # mag and phase are numpy arrays which contain the stft'ed audio's magnitude and
@@ -21,7 +21,7 @@ def specTOwav(mag, phase):
     # inverse sample time fourier transform
     stft_matrix = magdB * np.exp(1j * phase)
     return librosa.istft(
-        stft_matrix, hop_length=Consts.hoplength, win_length=Consts.winlength
+        stft_matrix, hop_length=consts.hoplength, win_length=consts.winlength
     )
 
 
@@ -29,7 +29,7 @@ def specTOwav(mag, phase):
 def wavTOspec(y, sr, n_fft):
     # fourier transform to get the magnitude of indivudual frequencies
     y = librosa.core.stft(
-        y, n_fft=n_fft, hop_length=Consts.hoplength, win_length=Consts.winlength
+        y, n_fft=n_fft, hop_length=consts.hoplength, win_length=consts.winlength
     )
     # get amplitude and angle different samplepoints. from librosa docs
     S = np.abs(y)
@@ -48,16 +48,16 @@ def wavTOmel(y):
     # do FT
     y = librosa.stft(
         y,
-        n_fft=Consts.dvec_nfft,
-        hop_length=Consts.hoplength,
-        win_length=Consts.winlength,
+        n_fft=consts.dvec_nfft,
+        hop_length=consts.hoplength,
+        win_length=consts.winlength,
         window="hann",
     )
     # mag = amp ** 2
     mag = np.abs(y) ** 2
     # filter to get melspectrogram after FT. number of mel bands = n_mels
     fltr = librosa.filters.mel(
-        sr=Consts.SAMPLING_RATE, n_fft=Consts.dvec_nfft, n_mels=40
+        sr=consts.SAMPLING_RATE, n_fft=consts.dvec_nfft, n_mels=40
     )
     # apply filter and get in dB
     y = np.log10(np.dot(fltr, mag) + 1e-6)

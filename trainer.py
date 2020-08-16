@@ -1,4 +1,4 @@
-import Consts
+import consts
 import glob
 import os
 import torch
@@ -6,7 +6,6 @@ from torch import nn, optim
 import requests
 import numpy as np
 
-import Consts
 import models
 
 import time
@@ -45,12 +44,9 @@ def train(
         print("No extractor provided, starting from scratch.")
 
     if extractor_source is not None:
-        chkpt_list = sorted(glob.glob(os.path.join(extractor_source, "*.pt")))
-        if len(chkpt_list):
-            chkpt = chkpt_list[-2]  # TODO: sorted does not work. need to change this
-            extractor.load_state_dict(torch.load(chkpt, map_location=device))
-            # print(f"Loaded extractor: {chkpt}.")
-            print("Loaded extractor:%s." % chkpt)  # for python3.5
+        extractor.load_state_dict(torch.load(extractor_source, map_location=device))
+        # print(f"Loaded extractor: {chkpt}.")
+        print("Loaded extractor:%s." % extractor_source)  # for python3.5
 
     extractor.train()
 

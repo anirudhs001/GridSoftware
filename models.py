@@ -1,45 +1,7 @@
 import torch
 from torch import nn, optim
 import torch.nn.functional as F
-import Consts
-
-############
-# Embedder
-############
-# MODELS adopted from github
-class LinearNorm(nn.Module):
-    def __init__(self):
-        super(LinearNorm, self).__init__()
-        self.linear_layer = nn.Linear(768, 256)
-
-    def forward(self, x):
-        return self.linear_layer(x)
-
-
-class Embedder(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.lstm = nn.LSTM(  # embedder inputsize = 40 = number of mel filterbanks
-            input_size=40, hidden_size=768, num_layers=3, batch_first=True
-        )
-
-        self.proj = LinearNorm()
-
-    def forward(self, mel):  # mel is the mel-filterbank energy
-        # input is (num_mels x Time=T) (num_mels = 40)
-
-        # create sliding window with size = 80(?) and 50% overlap
-        mels = mel.unfold(1, 80, 40)  # (num_mels x (T/40=T') x 80)
-        mels = mels.permute(1, 2, 0)  # (T' x 80 x num_mels)
-        x = self.lstm(mels)[0]  # (T' x 80 x lstm_hidden)
-        # get last window from x
-        x = x[:, -1, :]  # (T' x 1 x lstm_hidden)
-        x = self.proj(x)  # (T' x emb_dim=256)
-        # L2 norm all vectors
-        x = x / torch.norm(x, p=2, dim=1, keepdim=True)  # (T' x emb_dim)
-        # average pooling
-        x = x.sum(dim=0) / x.size(0)  # (emb_dim)
-        return x
+import consts
 
 
 ############
@@ -107,11 +69,6 @@ class Extractor(nn.Module):
         # x: [B, T, 8, num_freq]
         x = x.view(x.size(0), x.size(1), -1)
         # x: [B, T, 8*num_freq]
-
-        # dvec: [B, emb_dim]
-        dvec = dvec.unsqueeze(1)
-        dvec = dvec.repeat(1, x.size(1), 1)
-        # dvec: [B, T, emb_dim]
 
         x, _ = self.lstm(x)  # [B, T, 2*lstm_dim]
         x = F.relu(x)

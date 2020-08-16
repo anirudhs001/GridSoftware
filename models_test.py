@@ -86,7 +86,7 @@ class Extractor(nn.Module):
         self.batch_relu_8 = nn.Sequential(nn.BatchNorm2d(8), nn.ReLU(),)
 
         # LSTMs and FC layers ( same os old model )
-        # inp = bs x T x 8*num_freq 
+        # inp = bs x T x 8*num_freq
         self.lstm = nn.LSTM(4808, 400, batch_first=True, bidirectional=True)
 
         self.fc1 = nn.Linear(2 * 400, 600)

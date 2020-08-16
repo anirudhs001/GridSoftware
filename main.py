@@ -12,7 +12,7 @@ import re
 # import zounds
 # from zounds.learn import PerceptualLoss
 
-import Consts
+import consts
 import models
 import trainer
 
@@ -29,10 +29,10 @@ import models_test
 class customDataset(Dataset):
     def __init__(self):
         self.Targets = glob.glob(
-            os.path.join(Consts.DATA_DIR, "**/target.pt"), recursive=True
+            os.path.join(consts.DATA_DIR, "**/target.pt"), recursive=True
         )
         self.Mixed = glob.glob(
-            os.path.join(Consts.DATA_DIR, "**/mixed.pt"), recursive=True
+            os.path.join(consts.DATA_DIR, "**/mixed.pt"), recursive=True
         )
 
         # print(len(self.Targets))
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     # create datsets and dataloader
     data = customDataset()
     data_loader = DataLoader(
-        data, batch_size=Consts.batch_size, collate_fn=collate_fn, shuffle=True,
+        data, batch_size=consts.batch_size, collate_fn=collate_fn, shuffle=True,
     )
 
     # testing: WORKS!
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     loss_func = nn.MSELoss()
 
     # Train!
-    extractor_dest = os.path.join(Consts.MODELS_DIR, "extractor_old")
+    extractor_dest = os.path.join(consts.MODELS_DIR, "extractor_old")
     print("beginning training:")
     trainer.train(
         data_loader,
@@ -107,7 +107,7 @@ if __name__ == "__main__":
         device=device,
         lr=3e-3,
         num_epochs=2,
-        # extractor_source=os.path.join(Consts.MODELS_DIR, "extractor_old/extractor-28-7-20/extractor_final_29-7-3.pt"),
+        # extractor_source=os.path.join( consts.MODELS_DIR, "extractor_old/extractor-9-8-4/extractor_final_9-8-7.pt"),
         extractor_source=None,
         extractor_dest=extractor_dest,
     )

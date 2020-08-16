@@ -10,7 +10,7 @@ import numpy as np
 
 import models
 import models_test
-import Consts
+import consts
 
 # TODO: get this
 # shamelessly borrowed from seungwonpark's repo
@@ -32,7 +32,7 @@ def specTOwav(mag, phase):
     # inverse sample time fourier transform
     stft_matrix = magdB * np.exp(1j * phase)
     return librosa.istft(
-        stft_matrix, hop_length=Consts.hoplength, win_length=Consts.winlength
+        stft_matrix, hop_length=consts.hoplength, win_length=consts.winlength
     )
 
 
@@ -41,7 +41,7 @@ def specTOwav(mag, phase):
 def wavTOspec(y, sr, n_fft):
     # fourier transform to get the magnitude of indivudual frequencies
     y = librosa.core.stft(
-        y, n_fft=n_fft, hop_length=Consts.hoplength, win_length=Consts.winlength
+        y, n_fft=n_fft, hop_length=consts.hoplength, win_length=consts.winlength
     )
     # get amplitude and angle different samplepoints. from librosa docs
     S = np.abs(y)
@@ -58,10 +58,10 @@ def wavTOspec(y, sr, n_fft):
 if __name__ == "__main__":
 
     # load model
-    extractor = models_test.Extractor()
+    extractor = models.Extractor()
 
     extractor_pth = os.path.join(
-        Consts.MODELS_DIR, "extractor_new/extractor-8-8-12/extractor_epoch-0_batch-900.pt"
+        consts.MODELS_DIR, "extractor_old/extractor-13-8-11/extractor_final_14-8-9.pt"
     )
     # extractor = torch.nn.DataParallel(extractor)
     extractor.load_state_dict(
@@ -70,24 +70,23 @@ if __name__ == "__main__":
     extractor.eval()
 
     # load input file
-    inp_path = glob.glob(os.path.join(Consts.DATA_DIR, "**/mixed.wav"))
-    inp_path = inp_path[2]
+    inp_path = glob.glob(os.path.join(consts.DATA_DIR, "**/mixed.wav"))
+    inp_path = inp_path[0]
     print(f"loading: {inp_path}")
-    mixed_wav, _ = librosa.load(inp_path, sr=Consts.SAMPLING_RATE)
-    mixed_mag, phase = wavTOspec(mixed_wav, sr=Consts.SAMPLING_RATE, n_fft=1200)
+    mixed_wav, _ = librosa.load(inp_path, sr=consts.SAMPLING_RATE)
+    mixed_mag, phase = wavTOspec(mixed_wav, sr=consts.SAMPLING_RATE, n_fft=1200)
     mixed_mag = torch.from_numpy(mixed_mag).detach()
     print("playing mixed audio")
     # sounddevice.play(mixed_wav, samplerate=16000)
     # time.sleep(3)
 
     # load target
-    targ_path = glob.glob(os.path.join(Consts.DATA_DIR, "**/target.wav"))
-    targ_path = targ_path[2]
-    targ_wav, _ = librosa.load(targ_path, sr=Consts.SAMPLING_RATE)
+    targ_path = glob.glob(os.path.join(consts.DATA_DIR, "**/target.wav"))
+    targ_path = targ_path[0]
+    targ_wav, _ = librosa.load(targ_path, sr=consts.SAMPLING_RATE)
     print("playing target audio")
     # sounddevice.play(targ_wav, samplerate=16000)
     # time.sleep(3)
-
 
     mask = extractor(mixed_mag.unsqueeze(0))
     output = mask * mixed_mag
@@ -97,7 +96,6 @@ if __name__ == "__main__":
     # print(output)
 
     librosa.output.write_wav(f"./Results/output.wav", final_wav, sr=16000)
-
 
     # final_wav = final_wav * 20 #20dB increase in volume if its too low
     # print("playing final audio")
