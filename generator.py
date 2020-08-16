@@ -159,14 +159,15 @@ def mix(clean, noisy, sample_num, outDir, save_wav=True):
     target_audio, _ = librosa.effects.trim(target_audio, top_db=20)
     noisy_audio, _ = librosa.effects.trim(noisy_audio, top_db=20)
 
-    # fit audio to 4 seconds, add zero padding if short
-    L = SAMPLING_RATE * 4
+    # fit audio to 3 seconds, add zero padding if short
+    L = SAMPLING_RATE * 3
     target_audio = shorten_file(target_audio, L)
     noisy_audio = shorten_file(noisy_audio, L)
 
     # make noisy same level as targ
     norm_targ = np.max(np.abs(target_audio))
     noisy_audio = noisy_audio * norm_targ / (np.max(np.abs(noisy_audio)))
+    noisy_audio /=5 # reduce volume of noisy
 
     # mix files
     # need to make copy cuz np.ndarrays are like pointers

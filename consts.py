@@ -9,7 +9,7 @@ urls_Noisy = {
 url_Flipkart = "https://drive.google.com/drive/folders/1FJ6lkvJihscFfXslVJyhXIob0fX7NNd1?usp=download"
 url_embedder = "https://drive.google.com/u/0/uc?id=1YFmhmUok-W76JkrfA0fzQt3c-ZsfiwfL&export=download"
 
-DATA_DIR = os.path.join("./datasets/processed", "size=15000")
+DATA_DIR = os.path.join("./datasets/processed", "size=10000")
 DATA_DIR_RAW = "./datasets/raw"
 DVEC_SRC = "./datasets/dvec"
 MODELS_DIR = "./models/"
@@ -21,6 +21,6 @@ winlength = 400
 dvec_nfft = 512
 
 # dataset setup parameters
-dataset_size = 15000  # TODO: change this if training. keep this small if testing code
+dataset_size = 10000  # TODO: change this if training. keep this small if testing code
 # training parameters
-batch_size = 6  # TODO: change this if running on bigger GPU
+batch_size = 8  # TODO: change this if running on bigger GPU

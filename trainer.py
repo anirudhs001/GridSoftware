@@ -20,6 +20,7 @@ def train(
     dataloader,
     extractor,
     loss_func,
+    loss_name,
     device,
     lr,
     num_epochs,
@@ -83,8 +84,13 @@ def train(
             output = (mask * mixed_mag).to(device)
 
             # 2) loss
-            loss = loss_func(output, target_mag)
-
+            if loss_name = "GE2ELoss":
+                #merge output and target
+                target_mag = target_mag.reshape((consts.batch_size, 1 , -1))
+                output = output.reshape((consts.batch_size,1, -1))
+                loss = loss_func(torch.cat((target_mag, output), 1))
+            else:
+                loss = loss_func(target_mag, output)
             # 3) clear gradient cache
             optimizer.zero_grad()
 
