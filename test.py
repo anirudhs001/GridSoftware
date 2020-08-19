@@ -61,7 +61,7 @@ if __name__ == "__main__":
     extractor = models.Extractor()
 
     extractor_pth = os.path.join(
-        consts.MODELS_DIR, "extractor_old/extractor-13-8-11/extractor_final_14-8-9.pt"
+        consts.MODELS_DIR, "extractor_new/extractor-19-8-3/extractor_final_19-8-11.pt"
     )
     # extractor = torch.nn.DataParallel(extractor)
     extractor.load_state_dict(
@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
     # load input file
     inp_path = glob.glob(os.path.join(consts.DATA_DIR, "**/mixed.wav"))
-    inp_path = inp_path[0]
+    inp_path = inp_path[2]
     print(f"loading: {inp_path}")
     mixed_wav, _ = librosa.load(inp_path, sr=consts.SAMPLING_RATE)
     mixed_mag, phase = wavTOspec(mixed_wav, sr=consts.SAMPLING_RATE, n_fft=1200)
@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     # load target
     targ_path = glob.glob(os.path.join(consts.DATA_DIR, "**/target.wav"))
-    targ_path = targ_path[0]
+    targ_path = targ_path[2]
     targ_wav, _ = librosa.load(targ_path, sr=consts.SAMPLING_RATE)
     print("playing target audio")
     # sounddevice.play(targ_wav, samplerate=16000)

@@ -84,7 +84,7 @@ def train(
             output = (mask * mixed_mag).to(device)
 
             # 2) loss
-            if loss_name = "GE2ELoss":
+            if loss_name == "GE2ELoss":
                 #merge output and target
                 target_mag = target_mag.reshape((consts.batch_size, 1 , -1))
                 output = output.reshape((consts.batch_size,1, -1))

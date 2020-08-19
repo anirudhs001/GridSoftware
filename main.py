@@ -21,7 +21,7 @@ import trainer
 
 # EXPERIMENTAL STUFF:
 import models_test
-from GE2ELoss/ge2e import GE2ELoss
+from GE2ELoss.ge2e import GE2ELoss
 
 ########################################################
 ##DATASET and DATALOADER:
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     # load models
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     print(f"training on {device}")
-    extractor = models_test.Extractor()  # testing new extractor
+    extractor = models.Extractor()  # testing new extractor
 
     # # Using GE2E loss
     loss_func = GE2ELoss(loss_method='contrast').to(device)
@@ -105,11 +105,11 @@ if __name__ == "__main__":
         data_loader,
         extractor,
         loss_func=loss_func,
-        loss_name,
+        loss_name=loss_name,
         device=device,
         lr=3e-3,
-        num_epochs=2,
-        # extractor_source=os.path.join( consts.MODELS_DIR, "extractor_old/extractor-9-8-4/extractor_final_9-8-7.pt"),
+        num_epochs=5,
+        # extractor_source=os.path.join( consts.MODELS_DIR, "extractor_new/extractor-16-8-9/extractor_final_16-8-13.pt"),
         extractor_source=None,
         extractor_dest=extractor_dest,
     )
