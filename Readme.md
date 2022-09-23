@@ -1,6 +1,7 @@
 
 # Cocktail Party
-this repo contains material related to making a speaker extraction model
+This repo contains material related to making a speaker extraction model.  
+Description of the final pipeline and results at : [https://github.com/anirudhs001/SpeechExtractor](https://github.com/anirudhs001/SpeechExtractor)
 
 ## Goals:
 - [x] extract the primary speaker from an audio clip based on loudness and voice traits   
